@@ -1,4 +1,4 @@
-module ezlab
+module ezlabctl
 
 go 1.21.11
 

@@ -1,10 +1,9 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
+Copyright © 2024 Erdinc Kaya <erdincka@msn.com>
 */
 package main
 
-import "ezlab/cmd"
+import "ezlabctl/cmd"
 
 func main() {
 	cmd.Execute()
