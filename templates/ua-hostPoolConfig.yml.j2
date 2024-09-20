@@ -1,0 +1,13 @@
+defaultHostCredentials:
+  sshUserName: {{ ansible_user }}
+  sshPassword: {{ sshpassword_b64 }}
+  sshPort: 22
+hosts:
+  - host: {{ master }}
+    labels:
+    - role: controlplane
+  {% for worker in workers %}
+- host: {{ worker }}
+    labels:
+    - role: worker
+  {% endfor %}

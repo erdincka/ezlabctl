@@ -1,0 +1,24 @@
+defaultHostCredentials:
+  sshUserName: {{ ansible_user }}
+  sshPassword: {{ sshpassword_b64 }}
+  sshPort: 22
+airgap:
+  registryUrl: {{ registryUrl }}
+  registryInsecure: {{ registryInsecure }}
+orchestrator:
+  deployTarget: pph
+  controlPlane:
+    enableHa: false
+    externalUrl: ""
+  network:
+    pods:
+      cidrBlocks: 10.224.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks: 10.96.0.0/12
+hosts:
+  - host: {{ orchestrator }}
+webproxy:
+  httpProxy: {{ http_proxy }}
+  httpsProxy: {{ https_proxy }}
+  noProxy: {{ no_proxy }}
