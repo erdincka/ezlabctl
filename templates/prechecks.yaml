@@ -1,0 +1,17 @@
+# Command:
+# ./ezfabricctl prechecks --input </path/to/input-file> --parallel=true --cleanup=true
+
+defaultHostCredentials:
+  sshUserName: {{ .Username }}
+  sshPassword: {{ .Password }}
+  sshPort: 22
+sudoPrefix: ""
+prechecks:
+  coordinator:
+    controlplane:
+    - host: {{ .Orchestrator }}
+  ua:
+    controlplane:
+    - host: {{ .Master }}
+    worker: {{range $worker := .Workers }}
+    - host: {{ $worker }}{{end}}

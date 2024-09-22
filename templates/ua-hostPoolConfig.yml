@@ -1,0 +1,13 @@
+defaultHostCredentials:
+  sshUserName: {{ .Username }}
+  sshPassword: {{ .Password }}
+  sshPort: 22
+hosts:
+  - host: {{ .Master }}
+    labels:
+    - role: controlplane
+  {{range $worker := .Workers }}
+- host: {{ $worker }}
+    labels:
+    - role: worker
+  {{end}}

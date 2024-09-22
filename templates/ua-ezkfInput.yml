@@ -1,10 +1,10 @@
 defaultHostCredentials:
-  sshUserName: {{ ansible_user }}
-  sshPassword: {{ sshpassword_b64 }}
+  sshUserName: {{ .Username }}
+  sshPassword: {{ .Password }}
   sshPort: 22
 airgap:
-  registryUrl: {{ registryUrl }}
-  registryInsecure: {{ registryInsecure }}
+  registryUrl: {{ .RegistryUrl }}
+  registryInsecure: {{ .RegistryInsecure }}
 orchestrator:
   deployTarget: pph
   controlPlane:
@@ -17,8 +17,10 @@ orchestrator:
     services:
       cidrBlocks: 10.96.0.0/12
 hosts:
-  - host: {{ orchestrator }}
+  - host: {{ .Orchestrator }}
+{{if .Proxy }}
 webproxy:
-  httpProxy: {{ http_proxy }}
-  httpsProxy: {{ https_proxy }}
-  noProxy: {{ no_proxy }}
+  httpProxy: {{ .Proxy }}
+  httpsProxy: {{ .Proxy }}
+  noProxy: {{ .NoProxy }}
+{{end}}

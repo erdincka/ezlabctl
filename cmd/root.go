@@ -24,6 +24,9 @@ func Execute() {
 func init() {
     // Here we will add subcommands like prepare, deploy, etc.
     rootCmd.AddCommand(prepareCmd)
-    rootCmd.AddCommand(setupDfCmd)
-    rootCmd.AddCommand(installCmd)
+    rootCmd.AddCommand(setupCmd)
+    rootCmd.AddCommand(deployCmd)
+    rootCmd.AddCommand(statusCmd)
+    rootCmd.AddCommand(kubeconfCmd)
+    rootCmd.AddCommand(uiCmd)
 }

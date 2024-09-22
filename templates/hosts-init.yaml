@@ -1,0 +1,22 @@
+# Command:
+# ./ezfabricctl poolhost init --input </path/to/input-file> [--kubeconfig </path/to/orchestrator/kubeconfig>]
+
+defaultHostCredentials:
+  sshUserName: {{ .Username }}
+  sshPassword: {{ .Password }}
+  sshPort: 22 #int: default is 22
+
+sudoPrefix: "" #string: default is sudo -n
+
+hosts:
+  - host: {{ .Master }} #string: set fqdn or ip to be added
+    labels: {
+      role: controlplane
+    } #dictionary: it is set in EzFabricPoolHost .spec.labels
+
+  {{range $worker := .Workers }}
+  - host: {{ $worker }}
+    labels: {
+      role: worker
+    }
+  {{end}}

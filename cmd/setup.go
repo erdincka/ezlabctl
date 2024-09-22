@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var setupDfCmd = &cobra.Command{
+var setupCmd = &cobra.Command{
     Use:   "setup",
     Short: "Configure external Data Fabric for UA deployment",
     Run: func(cmd *cobra.Command, args []string) {
@@ -33,7 +33,7 @@ var setupDfCmd = &cobra.Command{
     commands := []string{
         // "( id ezua && id -nG ezua | grep -s $(id -un ezua) ) || sudo useradd -m -s /bin/bash -U ezua",
         // "id ezua || sudo useradd -m -U ezua",
-        "id ezua 2>&1 >/dev/null || sudo useradd -m -U ezua 2>&1 > /dev/null",
+        "id ezua || sudo useradd -m -U ezua 2>&1 > /dev/null",
         "echo ezua: " + appConfig.DFPass + " | sudo chpasswd",
         "echo " + appConfig.DFPass + " | maprlogin password -user " + appConfig.DFUser,
         "echo Setting up the volumes for UA...",

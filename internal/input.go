@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -25,6 +26,7 @@ type Node struct {
 
 // AppConfig holds the controller and worker node details and common credentials
 type AppConfig struct {
+	Orchestrator Node `json:"orchestrator"`
 	Controller Node   `json:"controller"`
 	Workers    []Node `json:"workers"`
 	Username string `json:"username"`
@@ -39,24 +41,21 @@ type AppConfig struct {
 
 // GetUAInput collects node details, credentials, and checks connectivity
 func GetUAInput() (*AppConfig, error) {
+	var orchestrator Node
 	var controller Node
 	var workers []Node
 
     // Read config file
-    appConfig := loadConfig()
+    appConfig := GetAppConfiguration()
+
+	// Get orchestrator node input (default to localhost)
+    orchestratorInput := AskForInput("Enter the orchestrator node (IP or Hostname)", appConfig.Orchestrator.IP)
 
 	// Get controller node input
     controllerInput := AskForInput("Enter the controller node (IP or Hostname)", appConfig.Controller.IP)
 
 	// Get worker nodes input and validate connectivity for each
-    workerIps := strings.Join(func(nodes []Node) []string {
-        ips := []string{}
-        for _, node := range nodes {
-            ips = append(ips, node.IP)
-        }
-        return ips
-    }(appConfig.Workers), ",")
-
+    workerIps := GetWorkerIPs()
     workerInput := AskForInput("Enter worker nodes (IP or Hostname, min 3, separated by comma)", workerIps)
 
     if len(strings.Split(workerInput, ",")) < 3 {
@@ -67,7 +66,13 @@ func GetUAInput() (*AppConfig, error) {
     username := AskForInput("Enter SSH username", appConfig.Username)
     password := AskForInput("Enter SSH password", appConfig.Password)
 
-    // Validate controller and worker nodes
+    // Validate orchestrator, controller and worker nodes
+    orchNode, err := resolveNode(orchestratorInput)
+    if err != nil {
+        return nil, fmt.Errorf("failed to validate orchestrator node: %w", err)
+    }
+    orchestrator = *orchNode
+
     ctrlNode, err := resolveNode(controllerInput)
     if err != nil {
         return nil, fmt.Errorf("failed to validate controller node: %w", err)
@@ -93,12 +98,10 @@ func GetUAInput() (*AppConfig, error) {
     }
     wg.Wait()
 
-	commandChannel := make(chan string)
-    go ExecCommand("timedatectl show --property=Timezone --value", commandChannel)
-	// Wait for command result
-	tz := <-commandChannel
+    tz := GetCommandOutput("timedatectl show --property=Timezone --value")
 
     // Save the configuration if all went well
+	appConfig.Orchestrator = orchestrator
 	appConfig.Controller = controller
 	appConfig.Workers = workers
     appConfig.Username = username
@@ -108,19 +111,30 @@ func GetUAInput() (*AppConfig, error) {
 
 	// Save the updated config
 	if err := saveConfig(appConfig); err != nil {
-		fmt.Println("Error saving config:", err)
+		log.Fatal("Error saving config:", err)
 	} else {
-		fmt.Println("Config saved.")
+		log.Println("Config saved.")
 	}
 
 	return appConfig, nil
+}
+
+func GetWorkerIPs() string {
+	appConfig := GetAppConfiguration()
+	return strings.Join(func(nodes []Node) []string {
+        ips := []string{}
+        for _, node := range nodes {
+            ips = append(ips, node.IP)
+        }
+        return ips
+    }(appConfig.Workers), ",")
 }
 
 
 // GetDFInput collects information for External Data Fabric configuration
 func GetDFInput() (*AppConfig, error) {
     // Read config file
-    appConfig := loadConfig()
+    appConfig := GetAppConfiguration()
 
 	host := AskForInput("DF host", appConfig.DFHost)
 	user := AskForInput("DF user", appConfig.DFUser)
@@ -246,7 +260,7 @@ func saveConfig(config *AppConfig) error {
 	return nil
 }
 
-func loadConfig() (*AppConfig) {
+func GetAppConfiguration() (*AppConfig) {
     var config AppConfig
 	// Attempt to open the config file
 	file, err := os.Open("ezlab.json")
@@ -295,18 +309,108 @@ func AskForInput(prompt string, defaultValue string) string {
 }
 
 // https://stackoverflow.com/a/18159705/7033031
-func ExecCommand(command string, result chan<- string) {
-	log.Println("Executing command:", command)
-    args := strings.Split(command, " ")
-    cmd := exec.Command(args[0], args[1:]...)
-    var out bytes.Buffer
-    var stderr bytes.Buffer
-    cmd.Stdout = &out
-    cmd.Stderr = &stderr
-    err := cmd.Run()
-    if err != nil {
-        log.Fatal(fmt.Sprint(err) + ": " + stderr.String())
-    }
-	// log.Println(command, "finished", out.String())
-    result <- strings.TrimSpace(out.String())
+// func ExecCommand(command string, result chan<- string) {
+// 	log.Println("Executing command:", command)
+//     args := strings.Split(command, " ")
+//     cmd := exec.Command(args[0], args[1:]...)
+//     var out bytes.Buffer
+//     var stderr bytes.Buffer
+//     cmd.Stdout = &out
+//     cmd.Stderr = &stderr
+//     err := cmd.Run()
+//     if err != nil {
+//         log.Fatal(fmt.Sprint(err) + ": " + stderr.String())
+//     }
+// 	// log.Println(command, "finished", out.String())
+//     result <- strings.TrimSpace(out.String())
+// 	close(result)
+// }
+
+func GetCommandOutput(command string) string {
+	args := strings.Split(command, " ")
+	cmd := exec.Command(args[0], args[1:]...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	// Set up stdout and stderr redirection to the respective buffers
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		log.Fatal(fmt.Sprint(err) + ": " + stderr.String())
+		return ""
+	}
+
+	// Just log the stderr if any
+	if stderr.Len() > 0 {
+		log.Printf("STDERR: " + stderr.String())
+	}
+	return strings.TrimSpace(out.String())
+}
+
+// runCommand streams the output of a command while it's running and logs the exit code after completion.
+func RunCommand(command string) (int, error) {
+	// Split the command into name and arguments
+	args := strings.Fields(command)
+	cmdName := args[0]
+	cmdArgs := args[1:]
+
+	// Create the command
+	cmd := exec.Command(cmdName, cmdArgs...)
+
+	// Get stdout and stderr pipes
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return 0, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	// Use sync.WaitGroup to wait for stdout and stderr to finish
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Stream stdout and stderr concurrently
+	// Stream stdout and stderr concurrently
+	go func() {
+		defer wg.Done()
+		streamOutput(stdoutPipe, "STDOUT")
+	}()
+
+	go func() {
+		defer wg.Done()
+		streamOutput(stderrPipe, "STDERR")
+	}()
+
+	// Wait for stdout and stderr to be fully read
+	wg.Wait()
+
+	// Wait for the command to finish
+	if err := cmd.Wait(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// Command exited with a non-zero status code
+			return exitErr.ExitCode(), fmt.Errorf("command failed with exit code %d", exitErr.ExitCode())
+		}
+		return 0, fmt.Errorf("command failed to complete: %w", err)
+	}
+
+	// Command finished successfully
+	return cmd.ProcessState.ExitCode(), nil
+}
+
+// streamOutput reads and logs the output from the provided io.Reader.
+func streamOutput(pipe io.ReadCloser, pipeName string) {
+	scanner := bufio.NewScanner(pipe)
+	for scanner.Scan() {
+		fmt.Printf("[%s] %s\n", pipeName, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Error reading %s: %v\n", pipeName, err)
+	}
 }

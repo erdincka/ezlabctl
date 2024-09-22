@@ -2,7 +2,7 @@ workload:
   deployTarget: pph
   deployEnv: ezkube
   workloadType: ezua
-  clusterName: {{ clustername }}
+  clusterName: {{ .ClusterName }}
   resources:
     vcpu: 96
   controlPlaneHostLabels:
@@ -16,10 +16,10 @@ workload:
   clusterLabels: {}
   controlplane:
     enableHa: false
-    controlPlaneEndpoint: {{ master }}
+    controlPlaneEndpoint: {{ .Master }}
   airgap:
-    registryUrl: {{ registryUrl }}
-    registryInsecure: {{ registryInsecure }}
+    registryUrl: {{ .RegistryUrl }}
+    registryInsecure: {{ .RegistryInsecure }}
   network:
     pods:
       cidrBlocks: "10.224.0.0/16"

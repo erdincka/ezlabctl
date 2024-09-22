@@ -1,22 +1,22 @@
 apiVersion: v1
 data:
-  registryCaFile: {{ registryCaFile }}
-  userName: {{ registryUsername }}
-  password: {{ registryPassword_b64 }}
+  registryCaFile:
+  userName: {{ .RegistryUsername }}
+  password: {{ .RegistryPassword }}
 kind: Secret
 metadata:
   name: airgap
-  namespace: {{ clustername }}
+  namespace: {{ .ClusterName }}
 type: Opaque
 
 ---
 apiVersion: v1
 data:
-  internal_auth: {{ authdata_b64 }}
+  internal_auth: {{ .AuthData }}
 kind: Secret
 metadata:
   name: authconfig
-  namespace: {{ clustername }}
+  namespace: {{ .ClusterName }}
 type: Opaque
 
 
@@ -24,22 +24,24 @@ type: Opaque
 apiVersion: ezkfops.hpe.ezkf-ops.com/v1alpha1
 kind: EzkfWorkloadDeploy
 metadata:
-  name: {{ clustername }}
-  namespace: {{ clustername }}
+  name: {{ .ClusterName }}
+  namespace: {{ .ClusterName }}
 spec:
   deploytarget: pph
   workloadtype: ezua
-  clustername: {{ clustername }}
-  domainname: {{ clustername }}.{{ domain }}
+  clustername: {{ .ClusterName }}
+  domainname: {{ .Domain }}
   isAirgap: false
   deployallinfra: true
   genericaddons:
     machine: true
     ezkube: true
+{{if .Proxy }}
   proxy:
-    httpProxy: {{ http_proxy }}
-    httpsProxy: {{ https_proxy }}
-    noProxy: {{ no_proxy }}
+    httpProxy: {{ .Proxy }}
+    httpsProxy: {{ .Proxy }}
+    noProxy: {{ .NoProxy }}
+{{end}}
   workloadaddons:
     ua_prep: true
     hpecp_agent: true
@@ -54,5 +56,5 @@ spec:
     secret_name: "authconfig"
   airgap:
     secret_name: "airgap"
-    registryUrl: {{ registryUrl }}
-    registryInsecure: {{ registryInsecure }}
+    registryUrl: {{ .RegistryUrl }}
+    registryInsecure: {{ .RegistryInsecure }}

@@ -1,0 +1,19 @@
+# Command:
+# ./ezfabricctl workload init --input </path/to/input-file> [--kubeconfig </path/to/orchestrator/kubeconfig>]
+
+workload:
+  deployTarget: pph
+  deployEnv: ezkube
+  workloadType: ezua #string: ezua, ezdb, caas, or other
+  clusterName: {{ .ClusterName }}
+  resources:
+    vcpu: 8 #int
+  controlplane: # (ONLY PPH)
+    enableHa: false #bool: default is false
+    controlPlaneEndpoint: {{ .Master }} #string: set fqdn or ip of master node in workload cluster
+    # controlPlaneFloatingIpaddr: "" #string:(optional) set ipv4 to deploy loadbalancer to access kube-api server endpoint running in HA mode.
+
+  # airgap:
+  #   secret_name: "airgap"
+  #   registryUrl: {{ .RegistryUrl }}
+  #   registryInsecure: {{ .RegistryInsecure }}
