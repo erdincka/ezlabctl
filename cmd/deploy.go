@@ -23,6 +23,7 @@ var deployCmd = &cobra.Command{
         appConfig := internal.GetAppConfiguration()
         ezlabFilesDir := "/tmp/ezlab-" + appConfig.Domain
         orchestratorKubeConfig := ezlabFilesDir + "/mgmt-kubeconfig"
+        workloadKubeConfig := ezlabFilesDir + "/mgmt-kubeconfig"
 
         // Setup auth data for admin user
         authData := map[string]interface{}{
@@ -41,8 +42,10 @@ var deployCmd = &cobra.Command{
         }
         // log.Println("Auth data: " + string(authDataJSON))
 
+        dfConfig := internal.GetMaprConfig()
+
         uaConfig := internal.UADeployConfig{
-            Username: appConfig.Username,
+            Username: base64.StdEncoding.EncodeToString([]byte(appConfig.Username)),
             Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),
             Domain: appConfig.Domain,
             RegistryUsername: "",
@@ -56,6 +59,7 @@ var deployCmd = &cobra.Command{
             ClusterName: strings.Split(appConfig.Domain, ".")[0],
             AuthData: base64.StdEncoding.EncodeToString(authDataJSON),
             NoProxy: "10.96.0.0/12,10.224.0.0/16,10.43.0.0/16,192.168.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,169.254.169.254," + internal.GetWorkerIPs() + "," + appConfig.Controller.IP + "," + appConfig.Orchestrator.IP + ",." + appConfig.Domain,
+            DF: dfConfig,
         }
 
         err = os.MkdirAll(ezlabFilesDir,0755)
@@ -82,46 +86,73 @@ var deployCmd = &cobra.Command{
 
         log.Println("Successfully created yaml files")
 
-        // Run Prechecks
+        log.Fatalln("Let's stop here")
+
         log.Println("Running prechecks...")
-        exitCode, err := internal.RunCommand("ezfabricctl prechecks --input " + ezlabFilesDir + "/prechecks.yaml --parallel=true --cleanup=true")
+        precheckCmd := "ezfabricctl prechecks --input " + ezlabFilesDir + "/prechecks.yaml --parallel=true --cleanup=true"
+        log.Println(precheckCmd)
+        exitCode, err := internal.RunCommand(precheckCmd)
         if err != nil {
             log.Fatalf("Error: %v\n", err)
         } else {
             log.Printf("Prechecks finished with exit code %d\n", exitCode)
+            if exitCode != 0 {
+                log.Fatalln("Prechecks failed")
+             }
         }
-        // TODO: Process non-zero exit code
 
-        // Initialize fabric orchestrator
         log.Println("Initializing the orchestrator fabric...")
-        exitCode, err = internal.RunCommand("ezfabricctl orchestrator init --input " + ezlabFilesDir + "/coord-init.yaml --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + orchestratorKubeConfig)
+        orchInitCmd := "ezfabricctl orchestrator init --input " + ezlabFilesDir + "/coord-init.yaml --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + orchestratorKubeConfig
+        log.Println(orchInitCmd)
+        exitCode, err = internal.RunCommand(orchInitCmd)
         if err != nil {
             log.Fatalf("Error: %v\n", err)
         } else {
             log.Printf("Orchestrator init finished with exit code %d\n", exitCode)
+            if exitCode != 0 {
+                log.Fatalln("Orchestrator init failed")
+            }
         }
-        // TODO: Process non-zero exit code
 
-        // Add hosts for Workload cluster
         log.Println("Adding workload hosts to fabric...")
-        exitCode, err = internal.RunCommand("ezfabricctl poolhost init --input " + ezlabFilesDir + "/hosts-init.yaml --kubeconfig " + orchestratorKubeConfig)
+        poolHostCmd := "ezfabricctl poolhost init --input " + ezlabFilesDir + "/hosts-init.yaml --kubeconfig " + orchestratorKubeConfig
+        log.Println(poolHostCmd)
+        exitCode, err = internal.RunCommand(poolHostCmd)
         if err != nil {
-            log.Printf("Error: %v\n", err)
+            log.Fatalf("Error: %v\n", err)
         } else {
             log.Printf("Hosts init with exit code %d\n", exitCode)
+            if exitCode != 0 {
+                log.Fatal("Workload hosts init failed")
+            }
         }
-        // TODO: Process non-zero exit code
 
-        // Create workload cluster
         log.Println("Creating workload cluster...")
-        exitCode, err = internal.RunCommand("ezfabricctl workload init --input " + ezlabFilesDir + "/workload-init.yaml --kubeconfig " + orchestratorKubeConfig)
+        workloadInitCmd := "ezfabricctl workload init --input " + ezlabFilesDir + "/workload-init.yaml --kubeconfig " + orchestratorKubeConfig
+        log.Println(workloadInitCmd)
+        exitCode, err = internal.RunCommand(workloadInitCmd)
         if err != nil {
-            log.Printf("Error: %v\n", err)
+            log.Fatalf("Error: %v\n", err)
         } else {
             log.Printf("Workload init with exit code %d\n", exitCode)
+            if exitCode != 0 {
+                log.Fatal("Workload cluster init failed")
+            }
         }
-        // TODO: Process non-zero exit code
 
+        log.Println("Deploying EzUA on workload cluster")
+        workloadDeployCmd := "kubectl apply --kubeconfig=" + workloadKubeConfig + " -f " + ezlabFilesDir + "/workload-deploy.yaml"
+        log.Println(workloadDeployCmd)
+        exitCode, err = internal.RunCommand(workloadDeployCmd)
+        if err != nil {
+            log.Fatalf("Error: %v\n", err)
+        } else {
+            log.Println("Deployed EzUA on workload cluster.")
+            if exitCode !=  0 {
+                log.Fatal("Workload deploy failed")
+             }
+        }
 
+        log.Println("EzUA deployed successfully!")
     },
 }

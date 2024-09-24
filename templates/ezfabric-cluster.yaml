@@ -1,0 +1,51 @@
+---
+apiVersion: ezkfops.hpe.ezkf-ops.com/v1alpha1
+kind: EzFabricCluster
+metadata:
+  name: {{ .ClusterName }}
+  namespace: {{ .ClusterName }}
+spec:
+  allocationPolicy: host
+  clusterName: {{ .ClusterName }}
+  workloadType: ezua
+  deployTarget: pph
+  airgap:
+    registryInsecure: true
+    registryUrl: "{{ .RegistryUrl }}"
+  retryId: "1"
+  workloadOp:
+    lcmOpName: deploy
+    lcmOpDesc:
+      apiVersion: v1alpha1
+      group: ezkfops.hpe.ezkf-ops.com
+      kind: EzkfWorkloadDeploy
+      configMapName: deploy-wop
+      secretLabelKeyName: lcmopEzkfWorkloadDeploy
+  pph:
+    deployEnv: "ezkube"
+    k8sVersion: "1.28.11-hpe3"
+    clusterNetwork:
+      podCidr: "10.224.0.0/16"
+      serviceCidr: "10.96.0.0/12"
+      serviceDomain: "cluster.local"
+      controlPlaneEndpoint: {{ .Master }}
+      # controlPlaneFloatingIpaddr:
+      # appLoadBalancerFloatingIpRange: ""
+      # appLoadBalancerInterface:
+    oidcinfo:
+      oidcClientInfo: {}
+    resourceAllocation:
+      resources:
+        highAvailability: false
+        vcpu: 96
+        vgpu: 0
+        gpuPartitionSize: "whole"
+
+    hostAllocation:
+      workerHosts:{{ range $ip := .Workers }}
+        - credentialSecretName: ssh-info
+          name: "{{ $ip }}"{{ end }}
+
+      controlplaneHosts:
+        - credentialSecretName: ssh-info
+          name: "{{ .Master }}"

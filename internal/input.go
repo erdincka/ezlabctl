@@ -18,27 +18,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Node holds the FQDN, IP address
-type Node struct {
-	FQDN    string `json:"fqdn"`
-	IP      string `json:"ip"`
-}
-
-// AppConfig holds the controller and worker node details and common credentials
-type AppConfig struct {
-	Orchestrator Node `json:"orchestrator"`
-	Controller Node   `json:"controller"`
-	Workers    []Node `json:"workers"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-    Domain string `json:"domain"`
-    Timezone string `json:"timezone"`
-	DFHost string `json:"dfhost"`
-    DFUser string `json:"dfuser"`
-    DFPass string `json:"dfpass"`
-	// Repository string `json:"repository"`
-}
-
 // GetUAInput collects node details, credentials, and checks connectivity
 func GetUAInput() (*AppConfig, error) {
 	var orchestrator Node
@@ -92,9 +71,9 @@ func GetUAInput() (*AppConfig, error) {
 
 	var wg sync.WaitGroup // Create a WaitGroup
     // Test connection to all nodes
-    for _, node := range append(workers, controller) {
+    for _, node := range append(workers, controller, orchestrator) {
         wg.Add(1)
-        go testCredentials(&node, &username, &password, &wg)
+        go testCredentials(node, &username, &password, &wg)
     }
     wg.Wait()
 
@@ -130,18 +109,17 @@ func GetWorkerIPs() string {
     }(appConfig.Workers), ",")
 }
 
-
 // GetDFInput collects information for External Data Fabric configuration
 func GetDFInput() (*AppConfig, error) {
     // Read config file
     appConfig := GetAppConfiguration()
 
 	host := AskForInput("DF host", appConfig.DFHost)
-	user := AskForInput("DF user", appConfig.DFUser)
-	password := AskForInput("DF password", appConfig.DFPass)
+	user := AskForInput("DF Cluster Admin", appConfig.DFAdmin)
+	password := AskForInput("DF Cluster Admin password", appConfig.DFPass)
 
 	appConfig.DFHost = host
-	appConfig.DFUser = user
+	appConfig.DFAdmin = user
 	appConfig.DFPass = password
 
 	// Save the node config to a file
@@ -192,7 +170,7 @@ func resolveNode(node string) (*Node, error) {
 }
 
 // testCredentials tests SSH connectivity
-func testCredentials(node *Node, username *string, password *string, wg *sync.WaitGroup) error {
+func testCredentials(node Node, username *string, password *string, wg *sync.WaitGroup) error {
     defer wg.Done()
 
     for {
@@ -209,7 +187,7 @@ func testCredentials(node *Node, username *string, password *string, wg *sync.Wa
 }
 
 // testSSHAndSudo checks if the node can be accessed via SSH and sudo
-func testSSHAndSudo(node *Node, username string, password string) error {
+func testSSHAndSudo(node Node, username string, password string) error {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -413,4 +391,21 @@ func streamOutput(pipe io.ReadCloser, pipeName string) {
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading %s: %v\n", pipeName, err)
 	}
+}
+
+func ReadFile(path string) []byte {
+	// Open the file and defer closing it
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+
+	// Read the contents of the file into a string
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return data
 }

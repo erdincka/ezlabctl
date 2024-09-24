@@ -30,7 +30,7 @@ var prepareCmd = &cobra.Command{
                 fqdns = append(fqdns, host.FQDN)
             }
             return fqdns
-        }(append(nodes.Workers, nodes.Controller))
+        }(append(nodes.Workers, nodes.Controller, nodes.Orchestrator))
 
         // Run commands on all hosts
         var wg sync.WaitGroup // Create a WaitGroup
@@ -40,16 +40,19 @@ var prepareCmd = &cobra.Command{
 
             commands := []string{
                 "sudo hostnamectl set-hostname " + host,
-                "sudo sed -i '/^::1/d' /etc/hosts",
-                "sudo sed -i 's/myhostname//g' /etc/nsswitch.conf",
                 "sudo localectl set-locale LANG=en_US.UTF-8",
-                "echo installing packages... RPM DEPENDS CLUASE SHOULD REPLACE THIS",
-                "sudo dnf install -y nfs-utils policycoreutils-python-utils conntrack-tools iptables-services iptables-utils jq tar sshpass",
-                "sudo systemctl enable --now iptables",
-                "sudo dnf --setopt=tsflags=noscripts install -y -q iscsi-initiator-utils",
-                "echo \"InitiatorName=$(/sbin/iscsi-iname)\" | sudo tee /etc/iscsi/initiatorname.iscsi",
-                "sudo systemctl enable --now iscsid; sudo systemctl restart iscsid",
-                "sudo /sbin/ethtool -K eth0 tx-checksum-ip-generic off",
+                "sudo timedatectl set-timezone " + nodes.Timezone,
+                "echo '" + nodes.Username + " ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/" + nodes.Username,
+                "sudo sed -i '/^::1/d' /etc/hosts",
+                "sudo sed -i '/" + host + "/d' /etc/hosts",
+                "sudo sed -i 's/myhostname//g' /etc/nsswitch.conf",
+                "sudo subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms",
+                "echo installing required packages... RPM DEPENDS CLUASE SHOULD REPLACE THIS",
+                // "sudo dnf install -yq firewalld sshpass",
+                // "sudo sed -i 's/^FirewallBackend.*$/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf",
+                // "sudo modprobe ip_tables",
+                "echo Updating packages, might take a while...",
+                "sudo dnf upgrade -yq",
                 "echo preinstall finished for " + host,
             }
             // Run the commands using goroutines

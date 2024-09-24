@@ -7,7 +7,9 @@ workload:
   workloadType: ezua #string: ezua, ezdb, caas, or other
   clusterName: {{ .ClusterName }}
   resources:
-    vcpu: 8 #int
+    vcpu: 96 #int
+    vgpu: 0
+    # gpuPartitionSize: "whole"
   controlplane: # (ONLY PPH)
     enableHa: false #bool: default is false
     controlPlaneEndpoint: {{ .Master }} #string: set fqdn or ip of master node in workload cluster

@@ -7,7 +7,7 @@ hosts:
     labels:
     - role: controlplane
   {{range $worker := .Workers }}
-- host: {{ $worker }}
+  - host: {{ $worker }}
     labels:
     - role: worker
   {{end}}

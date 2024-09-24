@@ -20,7 +20,6 @@ var setupCmd = &cobra.Command{
     if err != nil {
         log.Fatalf("failed to get configuration for Data Fabric: %v", err)
     }
-    // log.Printf("Got configuration with %s", df)
 
     filesToTransfer := []string{
         "maprtenantticket",
@@ -31,12 +30,10 @@ var setupCmd = &cobra.Command{
     }
 
     commands := []string{
-        // "( id ezua && id -nG ezua | grep -s $(id -un ezua) ) || sudo useradd -m -s /bin/bash -U ezua",
-        // "id ezua || sudo useradd -m -U ezua",
         "id ezua || sudo useradd -m -U ezua 2>&1 > /dev/null",
         "echo ezua: " + appConfig.DFPass + " | sudo chpasswd",
-        "echo " + appConfig.DFPass + " | maprlogin password -user " + appConfig.DFUser,
-        "echo Setting up the volumes for UA...",
+        "[ -f /tmp/maprticket_$(id -u) ] || echo " + appConfig.DFPass + " | maprlogin password -user " + appConfig.DFAdmin,
+        "echo Setting up the UA volumes...",
         "maprcli acl edit -type cluster -user ezua:login,cv",
         "maprcli volume create -name ezua-base-volume -path /ezua -type rw -json -rootdiruser ezua -rootdirgroup ezua -createparent 1 || true",
         "[ -f /tmp/maprtenantticket ] || maprlogin generateticket -type tenant -user ezua -out /tmp/maprtenantticket",
@@ -49,12 +46,14 @@ var setupCmd = &cobra.Command{
 
     var wg sync.WaitGroup // Create a WaitGroup
     wg.Add(1)
+    log.Println("Setting up the DF for UA...")
     go internal.SSHCommands(appConfig.DFHost, appConfig.Username, appConfig.Password, commands, &wg)
     wg.Wait()
+    log.Println("DF is configured for UA...")
 
     // Perform SCP transfer
-	go internal.SCPGetFiles(appConfig.DFHost, appConfig.DFUser, appConfig.DFPass, "/tmp", "/tmp", filesToTransfer)
-    log.Println("Files transferred.")
+    log.Println("Getting DF files to /tmp...")
+	internal.SCPGetFiles(appConfig.DFHost, appConfig.DFAdmin, appConfig.DFPass, "/tmp", "/tmp", filesToTransfer)
 
     log.Println("DF Setup is done!")
     },

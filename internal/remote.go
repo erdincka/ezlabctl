@@ -98,9 +98,9 @@ func SCPGetFiles(host, user, pass, sourceDir, destinationDir string, fileList []
 		// Execute the SCP command
         exitCode, err := RunCommand(command)
         if err != nil {
-            log.Fatalf("failed to run command:%s %v", command, err)
+            log.Fatalf("failed to copy file:%s %v", command, err)
         } else {
-            log.Printf("Command %s returned exit code: %d\n", command, exitCode)
+            log.Printf("scp command: %s returned exit code: %d\n", command, exitCode)
         }
 	}
 
