@@ -3,7 +3,7 @@
 
 defaultHostCredentials:
   sshUserName: {{ .Username }}
-  sshPassword: {{ .Password }}
+  sshPassword: {{ .Password | base64 }}
   sshPort: 22
 sudoPrefix: ""
 prechecks:

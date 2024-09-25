@@ -1,55 +1,5 @@
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  name: ssh-info
-  namespace: ezfabric-host-pool
-  labels:
-    lcmopEzkfWorkloadDeploy: "true"
-data:
-  username: {{ .Username }}
-  password: {{ .Password }}
-type: Opaque
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: airgap
-  namespace: {{ .ClusterName }}
-  labels:
-    lcmopEzkfWorkloadDeploy: "true"
-data:
-  password: ""
-  registryCaFile: ""
-  username: ""
-type: Opaque
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: local-s3-secret
-  namespace: {{ .ClusterName }}
-  labels:
-    lcmopEzkfWorkloadDeploy: "true"
-data:
-  access-key: {{ .DF.AccessKey }}
-  secret-key: {{ .DF.SecretKey }}
-type: Opaque
-
----
-apiVersion: v1
-data:
-  internal_auth: {{ .AuthData }}
-kind: Secret
-metadata:
-  name: authconfig
-  namespace: {{ .ClusterName }}
-type: Opaque
-
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: {{ .ClusterName }}
@@ -60,8 +10,8 @@ data:
         "apiVersion": "ezkfops.hpe.ezkf-ops.com/v1alpha1",
         "kind": "EzkfWorkloadDeploy",
         "metadata": {
-          "name": {{ .ClusterName }},
-          "namespace": {{ .ClusterName }}
+          "name": "{{ .ClusterName }}",
+          "namespace": "{{ .ClusterName }}"
         },
         "spec": {
           "deploytarget": "pph",
@@ -75,11 +25,11 @@ data:
             "machine": true,
             "ezkube": true
           },
-          # "proxy": {
-          #   "httpProxy": "{{ .Proxy }}",
-          #   "httpsProxy": "{{ .Proxy }}",
-          #   "noProxy": "{{ .NoProxy }}"
-          # },
+          "proxy": {
+            "httpProxy": "{{ .Proxy }}",
+            "httpsProxy": "{{ .Proxy }}",
+            "noProxy": "{{ .NoProxy }}"
+          },
           "workloadaddons": {
             "ua_prep": true,
             "hpecp_agent": true,
@@ -91,19 +41,13 @@ data:
             "ezaf_controller": true
           },
           "deployallapps": false,
-          # {% if use_custom_domain_certs == "custom" %}
-          # "tlsconfig": {
-          #   "secret_name": "tlsconfig-{{ .ClusterName }}",
-          #   "secret_namespace": "{{ .ClusterName }}"
-          # },
-          # {% endif %}
           "authconfig": {
             "secret_name": "authconfig"
           },
           "airgap": {
             "secret_name": "airgap",
-            "registryUrl": "",
-            "registryInsecure": true
+            "registryUrl": "{{ .RegistryUrl }}",
+            "registryInsecure": {{ .RegistryInsecure }}
           },
           "apps": {
             "livy": true,
@@ -124,7 +68,7 @@ data:
               "endpoint": "{{ .DF.S3Nodes }}",
               "secret": "local-s3-secret"
             },
-            "provider": "EDF"
+            "provider": "EDF-S3"
           },
           "storage": {
             "edfConfig": {
@@ -133,14 +77,14 @@ data:
               "restServers": "{{ .DF.RestNodes }}",
               "secretName": "local-s3-secret"
             },
-            # "nfsConfig": {
-            #   "endpoint": "nfs_endpoint_here",
-            #   "share": "nfs_share_here",
-            #   "mountOptions": [
-            #     nfsvers:"4.1"
-            #   ]
-            # },
-            "provider": "EDF"
+            "nfsConfig": {
+              "endpoint": "{{ .DF.CldbNodes }}",
+              "share": "/mapr/datafabric/ezua",
+              "mountOptions": [
+                "nfsvers=3"
+              ]
+            },
+            "provider": "NFS"
           }
         }
       }

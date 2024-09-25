@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssh-info
+  namespace: ezfabric-host-pool
+  labels:
+    lcmopEzkfWorkloadDeploy: "true"
+data:
+  username: {{ .Username | base64 }}
+  password: {{ .Password | base64 }}
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: airgap
+  namespace: {{ .ClusterName }}
+  labels:
+    lcmopEzkfWorkloadDeploy: "true"
+data:
+  password: {{ .RegistryPassword }}
+  registryCaFile: {{ .RegistryCa }}
+  username: {{ .RegistryUsername }}
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: local-s3-secret
+  namespace: {{ .ClusterName }}
+  labels:
+    lcmopEzkfWorkloadDeploy: "true"
+data:
+  access-key: {{ .DF.AccessKey }}
+  secret-key: {{ .DF.SecretKey }}
+type: Opaque
+
+---
+apiVersion: v1
+data:
+  internal_auth: {{ .AuthData }}
+kind: Secret
+metadata:
+  name: authconfig
+  namespace: {{ .ClusterName }}
+type: Opaque

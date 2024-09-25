@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/spf13/cobra"
 )
@@ -18,10 +17,11 @@ var deployCmd = &cobra.Command{
     Use:   "deploy",
     Short: "Update yaml files and start the installer",
     Run: func(cmd *cobra.Command, args []string) {
-        log.Println("Creating yaml files")
+        log.Println("Starting deployment")
 
         appConfig := internal.GetAppConfiguration()
-        ezlabFilesDir := "/tmp/ezlab-" + appConfig.Domain
+        clusterName := strings.Split(appConfig.Domain, ".")[0]
+        ezlabFilesDir := "/tmp/ez-" + clusterName
         orchestratorKubeConfig := ezlabFilesDir + "/mgmt-kubeconfig"
         workloadKubeConfig := ezlabFilesDir + "/mgmt-kubeconfig"
 
@@ -31,7 +31,7 @@ var deployCmd = &cobra.Command{
                 "fullname": "Ezmeral Admin",
                 "email":    fmt.Sprintf("ezadmin@%s", appConfig.Domain),
                 "username": "ezua",
-                "password": appConfig.DFPass,
+                "password": appConfig.Password,
             },
         }
         // Convert authData to JSON
@@ -43,20 +43,23 @@ var deployCmd = &cobra.Command{
         // log.Println("Auth data: " + string(authDataJSON))
 
         dfConfig := internal.GetMaprConfig()
+        log.Printf("DEBUG: %v", dfConfig.TenantTicket)
 
         uaConfig := internal.UADeployConfig{
-            Username: base64.StdEncoding.EncodeToString([]byte(appConfig.Username)),
-            Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),
+            Username: appConfig.Username,
+            Password: appConfig.Password,
+            // Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),
             Domain: appConfig.Domain,
+            RegistryUrl: "",
+            RegistryInsecure: true,
             RegistryUsername: "",
             RegistryPassword: "",
-            RegistryUrl: "",
-            RegistryInsecure: "",
+            RegistryCa: "",
             // Orchestrator: internal.GetOutboundIP(),
             Orchestrator: appConfig.Orchestrator.IP,
             Master: appConfig.Controller.IP,
             Workers: strings.Split(internal.GetWorkerIPs(), ","),
-            ClusterName: strings.Split(appConfig.Domain, ".")[0],
+            ClusterName: clusterName,
             AuthData: base64.StdEncoding.EncodeToString(authDataJSON),
             NoProxy: "10.96.0.0/12,10.224.0.0/16,10.43.0.0/16,192.168.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,169.254.169.254," + internal.GetWorkerIPs() + "," + appConfig.Controller.IP + "," + appConfig.Orchestrator.IP + ",." + appConfig.Domain,
             DF: dfConfig,
@@ -67,29 +70,33 @@ var deployCmd = &cobra.Command{
             log.Fatal("Error creating yaml directory: ",err)
         }
 
-        yamlfiles, err := internal.GetTemplateFiles()
-        if err != nil {
-            fmt.Println("Error:", err)
-            return
+        // yamlfiles, err := internal.GetTemplateFiles()
+        // if err != nil {
+        //     fmt.Println("Error:", err)
+        //     return
+        // }
+
+        deploySteps := map[string]string{
+            "prechecks":        "00-prechecks.yaml",
+            "fabricinit":       "01-fabricctl-init.yaml",
+            "workloadprepare":  "02-workload-prepare.yaml",
+            "workloaddeploy":   "03-workload-deploy.yaml",
+            "fabriccluster":    "04-ezfabric-cluster.yaml",
         }
 
-        var wg sync.WaitGroup
-        for _, file := range yamlfiles {
-            wg.Add(1)
-            go func(f string) {
-                defer wg.Done()
-                internal.ProcessTemplate(f, ezlabFilesDir + "/" + filepath.Base(f), uaConfig)
-                log.Println("Processing: " + f)
-            }(file)
+        for _, file := range deploySteps {
+            // go func(f string) {
+                internal.ProcessTemplate("templates/" + file, ezlabFilesDir + "/" + filepath.Base(file), uaConfig)
+                log.Println("Processing: " + file)
+            // }(file)
         }
-        wg.Wait()
 
-        log.Println("Successfully created yaml files")
+        log.Println("YAML files ready")
 
-        log.Fatalln("Let's stop here")
+        log.Fatalln("Stop here")
 
         log.Println("Running prechecks...")
-        precheckCmd := "ezfabricctl prechecks --input " + ezlabFilesDir + "/prechecks.yaml --parallel=true --cleanup=true"
+        precheckCmd := "ezfabricctl prechecks --input " + ezlabFilesDir + "/" + deploySteps["prechecks"] + " --parallel=true --cleanup=true"
         log.Println(precheckCmd)
         exitCode, err := internal.RunCommand(precheckCmd)
         if err != nil {
@@ -102,7 +109,7 @@ var deployCmd = &cobra.Command{
         }
 
         log.Println("Initializing the orchestrator fabric...")
-        orchInitCmd := "ezfabricctl orchestrator init --input " + ezlabFilesDir + "/coord-init.yaml --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + orchestratorKubeConfig
+        orchInitCmd := "ezfabricctl orchestrator init --input " + ezlabFilesDir + "/" + deploySteps["fabricinit"] + "--releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + orchestratorKubeConfig
         log.Println(orchInitCmd)
         exitCode, err = internal.RunCommand(orchInitCmd)
         if err != nil {
@@ -114,42 +121,84 @@ var deployCmd = &cobra.Command{
             }
         }
 
-        log.Println("Adding workload hosts to fabric...")
-        poolHostCmd := "ezfabricctl poolhost init --input " + ezlabFilesDir + "/hosts-init.yaml --kubeconfig " + orchestratorKubeConfig
-        log.Println(poolHostCmd)
-        exitCode, err = internal.RunCommand(poolHostCmd)
+        // log.Println("Adding workload hosts to fabric...")
+        // poolHostCmd := "ezfabricctl poolhost init --input " + ezlabFilesDir + "/hosts-init.yaml --kubeconfig " + orchestratorKubeConfig
+        // log.Println(poolHostCmd)
+        // exitCode, err = internal.RunCommand(poolHostCmd)
+        // if err != nil {
+        //     log.Fatalf("Error: %v\n", err)
+        // } else {
+        //     log.Printf("Hosts init with exit code %d\n", exitCode)
+        //     if exitCode != 0 {
+        //         log.Fatal("Workload hosts init failed")
+        //     }
+        // }
+
+        // log.Println("Creating workload cluster...")
+        // workloadInitCmd := "ezfabricctl workload init --input " + ezlabFilesDir + "/workload-init.yaml --kubeconfig " + orchestratorKubeConfig
+        // log.Println(workloadInitCmd)
+        // exitCode, err = internal.RunCommand(workloadInitCmd)
+        // if err != nil {
+        //     log.Fatalf("Error: %v\n", err)
+        // } else {
+        //     log.Printf("Workload init with exit code %d\n", exitCode)
+        //     if exitCode != 0 {
+        //         log.Fatal("Workload cluster init failed")
+        //     }
+        // }
+
+        // Define kubectl command against orchestrator cluster
+        kubeOrch := "kubectl --kubeconfig=" + orchestratorKubeConfig
+
+        log.Println("Prepare for workload cluster")
+        workloadPrepareCmd := kubeOrch + " create ns " + clusterName + ";" + kubeOrch + " apply -f " + ezlabFilesDir + "/" + deploySteps["workloadprepare"]
+        log.Println(workloadPrepareCmd)
+        exitCode, err = internal.RunCommand(workloadPrepareCmd)
         if err != nil {
             log.Fatalf("Error: %v\n", err)
         } else {
-            log.Printf("Hosts init with exit code %d\n", exitCode)
-            if exitCode != 0 {
-                log.Fatal("Workload hosts init failed")
-            }
+            log.Println("Secrets created for the workload cluster.")
+            if exitCode !=  0 {
+                log.Fatal("Secrets failed to create")
+             }
         }
 
-        log.Println("Creating workload cluster...")
-        workloadInitCmd := "ezfabricctl workload init --input " + ezlabFilesDir + "/workload-init.yaml --kubeconfig " + orchestratorKubeConfig
-        log.Println(workloadInitCmd)
-        exitCode, err = internal.RunCommand(workloadInitCmd)
-        if err != nil {
-            log.Fatalf("Error: %v\n", err)
-        } else {
-            log.Printf("Workload init with exit code %d\n", exitCode)
-            if exitCode != 0 {
-                log.Fatal("Workload cluster init failed")
-            }
-        }
-
-        log.Println("Deploying EzUA on workload cluster")
-        workloadDeployCmd := "kubectl apply --kubeconfig=" + workloadKubeConfig + " -f " + ezlabFilesDir + "/workload-deploy.yaml"
+        log.Println("Create workload deploy CR")
+        workloadDeployCmd := kubeOrch + " apply -f " + ezlabFilesDir + "/"  + deploySteps["workloaddeploy"]
         log.Println(workloadDeployCmd)
         exitCode, err = internal.RunCommand(workloadDeployCmd)
         if err != nil {
             log.Fatalf("Error: %v\n", err)
         } else {
-            log.Println("Deployed EzUA on workload cluster.")
+            log.Println("Workload CR applied.")
+            if exitCode !=  0 {
+                log.Fatal("Workload deploy CR failed")
+             }
+        }
+
+        log.Println("Create workload deploy CR")
+        workloadCreateCmd := kubeOrch + " apply -f " + ezlabFilesDir + "/"  + deploySteps["fabriccluster"]
+        log.Println(workloadCreateCmd)
+        exitCode, err = internal.RunCommand(workloadCreateCmd)
+        if err != nil {
+            log.Fatalf("Error: %v\n", err)
+        } else {
+            log.Println("Created workload cluster.")
             if exitCode !=  0 {
                 log.Fatal("Workload deploy failed")
+             }
+        }
+
+        // workloadStatusCmd := "kubectl --kubeconfig=" + orchestratorKubeConfig + " get ezfabriccluster/" + clusterName + " -n " + clusterName + " -o json | jq -r '.status.workloadOpStatus.status'"
+        WorkloadKubeconfigCmd := kubeOrch + " get secret " + clusterName + "-kubeconfig -n " + clusterName + " -o json | jq -r '.data.value' | base64 -d > " + workloadKubeConfig
+        log.Println(workloadCreateCmd)
+        exitCode, err = internal.RunCommand(WorkloadKubeconfigCmd)
+        if err != nil {
+            log.Fatalf("Error: %v\n", err)
+        } else {
+            log.Println("Saved workload kubeconfig.")
+            if exitCode !=  0 {
+                log.Fatal("Workload kubeconfig save failed")
              }
         }
 

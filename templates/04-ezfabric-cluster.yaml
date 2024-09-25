@@ -42,7 +42,7 @@ spec:
         gpuPartitionSize: "whole"
 
     hostAllocation:
-      workerHosts:{{ range $ip := .Workers }}
+      workerHosts: {{ range $ip := .Workers }}
         - credentialSecretName: ssh-info
           name: "{{ $ip }}"{{ end }}
 

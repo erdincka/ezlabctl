@@ -34,10 +34,11 @@ type UADeployConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 	Domain string `yaml:"host"`
+	RegistryUrl string `yaml:"registryUrl"`
+	RegistryInsecure bool `yaml:"registryInsecure"`
 	RegistryUsername string `yaml:"registryUsername"`
 	RegistryPassword string `yaml:"registryPassword"`
-	RegistryUrl string `yaml:"registryUrl"`
-	RegistryInsecure string `yaml:"registryInsecure"`
+	RegistryCa string `yaml:"registryCa"`
 	Orchestrator string `yaml:"orchestrator"`
 	Master string `yaml:"master"`
 	Workers []string `yaml:"workers"`

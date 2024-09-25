@@ -243,7 +243,7 @@ func GetAppConfiguration() (*AppConfig) {
 	// Attempt to open the config file
 	file, err := os.Open("ezlab.json")
 	if err != nil {
-		fmt.Printf("Warning: failed to open config file: %v, using defaults\n", err)
+		fmt.Println("Using defaults")
 		return &config // Return default struct if file can't be opened
 	}
 	defer file.Close()

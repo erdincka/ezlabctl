@@ -1,0 +1,27 @@
+---
+
+# ./ezfabricctl orchestrator init  --input </path/to/input-file> --releasepkg </path/to/release-package-file>
+
+defaultHostCredentials:
+  sshUserName: {{ .Username }}
+  sshPassword: {{ .Password | base64 }}
+  sshPort: 22
+
+airgap:
+  registryUrl: {{ .RegistryUrl }} #string - default is "marketplace.us1.greenlake-hpe.com/ezkf"
+  registryInsecure: true #bool: default is false.
+
+orchestrator:
+  waitForServices: true
+  deployTarget: pph
+  deployEnv: ezkube
+  network:
+    pods:
+      cidrBlocks: 10.224.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks: 10.96.0.0/12
+  controlplane:
+    enableHa: false
+hosts:
+  - host: {{ .Orchestrator }}

@@ -19,7 +19,11 @@ func ProcessTemplate(inputFile string, outputFile string, data UADeployConfig) {
 		log.Fatalf("failed to read template file: %v", err)
 	}
 
-	tmpl, err := template.New(inputFile).Parse(string(templateContent))
+	tmpl, err := template.New(inputFile).Funcs(template.FuncMap{
+		"base64": func(s string) string {
+			return base64.StdEncoding.EncodeToString([]byte(s))
+		},
+	}).Parse(string(templateContent))
 	if err != nil {
 		log.Fatalf("failed to parse: %v", err)
 	}
