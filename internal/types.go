@@ -53,3 +53,9 @@ type UADeployConfig struct {
 	NoProxy string `yaml:"noProxy"`
 	DF DFConfig `yaml:"df"`
 }
+
+type TemplateFiles struct {
+	TemplateDirectory string `json:"templateDir"`
+	OrchestratorKubeConfig string `json:"orchestratorKubeConfig"`
+	WorkloadKubeConfig string `json:"workloadKubeConfig"`
+}

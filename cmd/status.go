@@ -10,8 +10,8 @@ import (
 )
 
 var statusCmd = &cobra.Command{
-    Use:   "status [-w]",
-    Short: "Check the status for the deployment, -w for waiting",
+    Use:   "status [-w|--watch]",
+    Short: "Check the status for the deployment, -w|--watch for waiting",
     Run: func(cmd *cobra.Command, args []string) {
         appConfig := internal.GetAppConfiguration()
         clusterName := strings.Split(appConfig.Domain, ".")[0]

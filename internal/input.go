@@ -247,7 +247,7 @@ func saveConfig(config *AppConfig) error {
 	return nil
 }
 
-func GetAppConfiguration() (*AppConfig) {
+func GetAppConfiguration() *AppConfig {
     var config AppConfig
 	// Attempt to open the config file
 	file, err := os.Open("ezlab.json")

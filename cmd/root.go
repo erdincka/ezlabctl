@@ -22,6 +22,9 @@ func Execute() {
 func init() {
     // Here you will define your flags and configuration settings.
     statusCmd.Flags().BoolP("watch", "w", false, "Watch the cluster status")
+    deployCmd.Flags().BoolP("template", "t", false, "Recreate templates")
+    deployCmd.Flags().BoolP("prechecks", "p", false, "Run prechecks")
+    deployCmd.Flags().BoolP("init", "i", false, "Initialize orchestrator")
 
     // Here we will add subcommands like prepare, deploy, etc.
     rootCmd.AddCommand(prepareCmd)
