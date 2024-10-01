@@ -138,5 +138,9 @@ func GetMaprConfig() DFConfig {
 	}
 	dfConfig.SecretKey = base64.StdEncoding.EncodeToString([]byte(secretKeyMatch[1]))
 
+	fileContent = ReadFile("/tmp/maprtenantticket")
+	dfConfig.ClusterName = strings.Split(string(fileContent), " ")[0]
+	log.Printf("EDF cluster name: %s\n", dfConfig.ClusterName)
+
 	return dfConfig
 }

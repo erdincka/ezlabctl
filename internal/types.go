@@ -15,6 +15,10 @@ type AppConfig struct {
 	Password string `json:"password"`
     Domain string `json:"domain"`
     Timezone string `json:"timezone"`
+	RegistryUrl string `json:"registryurl"`
+	RegistryUsername string `json:"registryusername"`
+	RegistryPassword string `json:"registrypassword"`
+	RegistryInsecure bool   `json:"registryinsecure"`
 	DFHost string `json:"dfhost"`
     DFAdmin string `json:"dfuser"`
     DFPass string `json:"dfpass"`
@@ -27,6 +31,7 @@ type DFConfig struct {
 	AccessKey string `json:"s3accesskey"`
 	SecretKey string `json:"s3secretkey"`
 	TenantTicket string `json:"tenantticket"`
+	ClusterName string `json:"clustername"`
 }
 
 // UADeployConfig holds the controller and worker node details and common credentials

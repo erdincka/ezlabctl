@@ -20,6 +20,9 @@ func Execute() {
 }
 
 func init() {
+    // Here you will define your flags and configuration settings.
+    statusCmd.Flags().BoolP("watch", "w", false, "Watch the cluster status")
+
     // Here we will add subcommands like prepare, deploy, etc.
     rootCmd.AddCommand(prepareCmd)
     rootCmd.AddCommand(setupCmd)

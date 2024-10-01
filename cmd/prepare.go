@@ -48,6 +48,7 @@ var prepareCmd = &cobra.Command{
                 "sudo sed -i 's/myhostname//g' /etc/nsswitch.conf",
                 "sudo subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms",
                 "echo installing required packages... RPM DEPENDS CLUASE SHOULD REPLACE THIS",
+                "sudo systemctl enable --now rpc-statd",
                 // "sudo dnf install -yq firewalld sshpass",
                 // "sudo sed -i 's/^FirewallBackend.*$/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf",
                 // "sudo modprobe ip_tables",

@@ -40,10 +40,12 @@ type: Opaque
 
 ---
 apiVersion: v1
-data:
-  internal_auth: {{ .AuthData }}
 kind: Secret
 metadata:
   name: authconfig
   namespace: {{ .ClusterName }}
+  labels:
+    lcmopEzkfWorkloadDeploy: "true"
+data:
+  internal_auth: {{ .AuthData }}
 type: Opaque

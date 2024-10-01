@@ -50,11 +50,11 @@ data:
             "registryInsecure": {{ .RegistryInsecure }}
           },
           "apps": {
-            "livy": true,
-            "ezsql": true,
-            "superset": true,
-            "feast": true,
-            "mlde": true,
+            "livy": false,
+            "ezsql": false,
+            "superset": false,
+            "feast": false,
+            "mlde": false,
             "airflow": true,
             "spark": true,
             "kubeflow": true,
@@ -65,7 +65,7 @@ data:
           },
           "objectStore": {
             "edfConfig": {
-              "endpoint": "{{ .DF.S3Nodes }}",
+              "endpoint": "https://{{ .DF.S3Nodes }}:9000",
               "secret": "local-s3-secret"
             },
             "provider": "EDF-S3"
@@ -79,9 +79,10 @@ data:
             },
             "nfsConfig": {
               "endpoint": "{{ .DF.CldbNodes }}",
-              "share": "/mapr/datafabric/ezua",
+              "share": "/mapr/{{ .DF.ClusterName }}/ezua",
               "mountOptions": [
-                "nfsvers=3"
+                "vers=3",
+                "nolock"
               ]
             },
             "provider": "NFS"

@@ -77,6 +77,11 @@ func GetUAInput() (*AppConfig, error) {
     }
     wg.Wait()
 
+	registryUrl := AskForInput("Enter Registry URL (without http[s])", appConfig.RegistryUrl)
+	registryUsername := AskForInput("Enter Registry Username", appConfig.RegistryUsername)
+	registryPassword := AskForInput("Enter Registry Password", appConfig.RegistryPassword)
+	registryInsecure := AskForInput("Is Registry Insecure", fmt.Sprint(appConfig.RegistryInsecure))
+
     tz := GetCommandOutput("timedatectl show --property=Timezone --value")
 
     // Save the configuration if all went well
@@ -87,6 +92,10 @@ func GetUAInput() (*AppConfig, error) {
     appConfig.Password = password
     appConfig.Domain =   domain
     appConfig.Timezone = string(tz)
+	appConfig.RegistryUrl = registryUrl
+	appConfig.RegistryUsername = registryUsername
+	appConfig.RegistryPassword = registryPassword
+	appConfig.RegistryInsecure = registryInsecure == "true"
 
 	// Save the updated config
 	if err := saveConfig(appConfig); err != nil {
@@ -259,7 +268,7 @@ func GetAppConfiguration() (*AppConfig) {
 func AskForInput(prompt string, defaultValue string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	for {
+	// for {
 		// Display the prompt with the default value
 		if defaultValue != "" {
 			fmt.Printf("%s [%s]: ", prompt, defaultValue)
@@ -277,13 +286,13 @@ func AskForInput(prompt string, defaultValue string) string {
 		}
 
 		// If response is not empty, return the user input
-		if response != "" {
+		// if response != "" {
 			return response
-		}
+		// }
 
 		// If response is empty and there's no default value, ask the question again
-		fmt.Println("Input cannot be empty. Please provide a valid response.")
-	}
+		// fmt.Println("Input is empty with no default value. Returning empty string.")
+	// }
 }
 
 // https://stackoverflow.com/a/18159705/7033031
@@ -386,7 +395,8 @@ func RunCommand(command string) (int, error) {
 func streamOutput(pipe io.ReadCloser, pipeName string) {
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
-		fmt.Printf("[%s] %s\n", pipeName, scanner.Text())
+		// fmt.Printf("[%s] %s\n", pipeName, scanner.Text())
+		fmt.Println(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading %s: %v\n", pipeName, err)
