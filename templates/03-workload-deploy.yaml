@@ -50,10 +50,10 @@ data:
             "registryInsecure": {{ .RegistryInsecure }}
           },
           "apps": {
-            "livy": false,
-            "ezsql": false,
-            "superset": false,
-            "feast": false,
+            "livy": true,
+            "ezsql": true,
+            "superset": true,
+            "feast": true,
             "mlde": false,
             "airflow": true,
             "spark": true,

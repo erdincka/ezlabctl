@@ -37,7 +37,7 @@ func GetDeployConfig() (string, TemplateFiles, UAConfig) {
 		"admin_user": map[string]string{
 			"fullname": "Ezmeral Admin",
 			"email":    fmt.Sprintf("ezadmin@%s", appConfig.Domain),
-			"username": "ezua",
+			"username": "admin",
 			"password": appConfig.Password,
 		},
 	}
