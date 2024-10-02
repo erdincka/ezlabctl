@@ -18,12 +18,6 @@ var kubeconfCmd = &cobra.Command{
 
         clusterName, ezlabFiles, _ := internal.GetDeployConfig()
 
-        // appConfig := internal.GetAppConfiguration()
-        // clusterName := strings.Split(appConfig.Domain, ".")[0]
-        // ezlabFilesDir := "/tmp/ez-" + clusterName
-        // ezlabFiles.OrchestratorKubeConfig := ezlabFilesDir + "/mgmt-kubeconfig"
-        // ezlabFiles.WorkloadKubeConfig := ezlabFilesDir + "/workload-kubeconfig"
-
         command := fmt.Sprintf("kubectl --kubeconfig=%s get secret %s-kubeconfig -n %s -o json", ezlabFiles.OrchestratorKubeConfig, clusterName, clusterName)
         log.Printf("Get workload kubeconfig with: %s\n", command)
         out := internal.GetCommandOutput(command)
@@ -65,4 +59,9 @@ var kubeconfCmd = &cobra.Command{
         fmt.Printf("Kube configuration saved to %s\n", ezlabFiles.WorkloadKubeConfig)
 
 	},
+}
+
+func init() {
+    rootCmd.AddCommand(kubeconfCmd)
+
 }

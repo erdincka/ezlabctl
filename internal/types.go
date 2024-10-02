@@ -34,8 +34,8 @@ type DFConfig struct {
 	ClusterName string `json:"clustername"`
 }
 
-// UADeployConfig holds the controller and worker node details and common credentials
-type UADeployConfig struct {
+// UAConfig holds the controller and worker node details and common credentials
+type UAConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 	Domain string `yaml:"host"`

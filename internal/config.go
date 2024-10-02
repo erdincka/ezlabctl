@@ -21,7 +21,7 @@ func GetDeploySteps() (map[string]string) {
 	return deploySteps
 }
 
-func GetDeployConfig() (string, TemplateFiles, UADeployConfig) {
+func GetDeployConfig() (string, TemplateFiles, UAConfig) {
 	appConfig := GetAppConfiguration()
 
 	clusterName := strings.Split(appConfig.Domain, ".")[0]
@@ -45,14 +45,14 @@ func GetDeployConfig() (string, TemplateFiles, UADeployConfig) {
 	authDataJSON, err := json.Marshal(authData)
 	if err != nil {
 		fmt.Println("Error converting authData to JSON:", err)
-		return "", TemplateFiles{}, UADeployConfig{}
+		return "", TemplateFiles{}, UAConfig{}
 	}
 	// log.Println("Auth data: " + string(authDataJSON))
 
 	dfConfig := GetMaprConfig()
 	// log.Printf("DEBUG tenantticket: %v", dfConfig.TenantTicket)
 
-	uaConfig := UADeployConfig{
+	uaConfig := UAConfig{
 		Username: appConfig.Username,
 		Password: appConfig.Password,
 		// Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),

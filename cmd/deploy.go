@@ -16,7 +16,7 @@ var deployCmd = &cobra.Command{
         deploySteps := internal.GetDeploySteps()
 
         if clusterName == "" {
-            log.Fatal("Cluster name is required! Run prepare and setup first!!!")
+            log.Fatal("Cluster name is required! Run prepare and storage first!!!")
         }
 
         log.Printf("Starting deployment for %s\n", clusterName)
@@ -107,6 +107,16 @@ var deployCmd = &cobra.Command{
             }
         }
 
-        log.Println("EzUA deployed successfully!")
+        log.Println("EzUA deployment started.")
     },
+}
+
+
+func init() {
+	rootCmd.AddCommand(deployCmd)
+
+    deployCmd.Flags().BoolP("template", "t", false, "Recreate templates")
+    deployCmd.Flags().BoolP("prechecks", "p", false, "Run prechecks")
+    deployCmd.Flags().BoolP("init", "i", false, "Initialize orchestrator")
+
 }

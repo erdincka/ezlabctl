@@ -34,3 +34,8 @@ var statusCmd = &cobra.Command{
         }
 	},
 }
+
+func init() {
+    rootCmd.AddCommand(statusCmd)
+    statusCmd.Flags().BoolP("watch", "w", false, "Watch the cluster status")
+}

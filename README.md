@@ -31,7 +31,7 @@ sudo chmod 0440 /etc/sudoers.d/010_ezlab
 - Download the latest release from [Github](https://github.com/erdincka/ua-rpm/releases)
 - Install the binary to `/usr/local/bin`
 - Run `ezlabctl prepare` on the Orchestrator host to setup all hosts for readiness
-- Run `ezlabctl setup` on the Orchestrator host to generate the necessary configuration files from Data Fabric
+- Run `ezlabctl storage` on the Orchestrator host to generate the necessary configuration files from Data Fabric
 - Run `ezlabctl deploy` on the Orchestrator host to deploy the management and then the workload clusters
 
 ## Monitor

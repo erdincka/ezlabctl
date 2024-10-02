@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-func ProcessTemplates(tempFiles TemplateFiles, deployConf UADeployConfig) {
+func ProcessTemplates(tempFiles TemplateFiles, deployConf UAConfig) {
 	// _, tempFiles, deployConf := GetDeployConfig()
 
 	err := os.MkdirAll(tempFiles.TemplateDirectory,0755)
@@ -29,7 +29,7 @@ func ProcessTemplates(tempFiles TemplateFiles, deployConf UADeployConfig) {
 
 }
 
-func ProcessTemplate(inputFile string, outputFile string, data UADeployConfig) {
+func ProcessTemplate(inputFile string, outputFile string, data UAConfig) {
 
 	templateContent, err := os.ReadFile(inputFile)
 	if err != nil {

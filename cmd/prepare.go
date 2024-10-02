@@ -63,3 +63,7 @@ var prepareCmd = &cobra.Command{
         log.Println("Hosts ready for installation!")
     },
 }
+
+func init() {
+    rootCmd.AddCommand(prepareCmd)
+}

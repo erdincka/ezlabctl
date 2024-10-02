@@ -46,20 +46,20 @@ func GetUAInput() (*AppConfig, error) {
     password := AskForInput("Enter SSH password", appConfig.Password)
 
     // Validate orchestrator, controller and worker nodes
-    orchNode, err := resolveNode(orchestratorInput)
+    orchNode, err := ResolveNode(orchestratorInput)
     if err != nil {
         return nil, fmt.Errorf("failed to validate orchestrator node: %w", err)
     }
     orchestrator = *orchNode
 
-    ctrlNode, err := resolveNode(controllerInput)
+    ctrlNode, err := ResolveNode(controllerInput)
     if err != nil {
         return nil, fmt.Errorf("failed to validate controller node: %w", err)
     }
     controller = *ctrlNode
 
     for _, node := range strings.Split(workerInput, ",") {
-        workerNode, err := resolveNode(node)
+        workerNode, err := ResolveNode(node)
         if err != nil {
             return nil, fmt.Errorf("invalid worker node #%s: %w", node, err)
         }
@@ -149,8 +149,8 @@ func getFqdn(ip string) (string) {
     return strings.TrimRight(names[0], ".")
 
 }
-// resolveNode validates and resolves the FQDN and IP for the given input
-func resolveNode(node string) (*Node, error) {
+// ResolveNode validates and resolves the FQDN and IP for the given input
+func ResolveNode(node string) (*Node, error) {
 	var fqdn, ip string
 
 	// Check if it's an IP address

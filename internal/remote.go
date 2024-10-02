@@ -14,6 +14,8 @@ import (
 
 // SSHCommand runs a single ssh command on a remote system
 func SSHCommand(host string, user string, password string, cmd string) error {
+    // DEBUG
+    // log.Printf("Connecting to %s as user %s with password %s\n", host, user, password)
     config := &ssh.ClientConfig{
         User: user,
         Auth: []ssh.AuthMethod{
@@ -103,6 +105,36 @@ func SCPGetFiles(host, user, pass, sourceDir, destinationDir string, fileList []
             log.Printf("scp command: %s returned exit code: %d\n", command, exitCode)
         }
 	}
+
+    // Remove the password file
+    err = os.Remove(passfile)
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func SCPPutFile(host, user, pass, sourceFile, destinationFile string) {
+
+    // Save password to file for later use
+    passfile := ".sshpass"
+    file, err := os.Create(passfile)
+    if err != nil {
+        log.Fatalf("%v", err)
+    }
+    defer file.Close()
+
+    fmt.Fprint(file, pass)
+
+    // SCP command
+    command := fmt.Sprintf("sshpass -f %s scp -o StrictHostKeyChecking=no %s %s@%s:%s", passfile, sourceFile, user, host, destinationFile)
+    log.Println("Copying file", file)
+    // Execute the SCP command
+    exitCode, err := RunCommand(command)
+    if err != nil {
+        log.Fatalf("failed to copy file:%s %v", command, err)
+    } else {
+        log.Printf("scp command: %s returned exit code: %d\n", command, exitCode)
+    }
 
     // Remove the password file
     err = os.Remove(passfile)

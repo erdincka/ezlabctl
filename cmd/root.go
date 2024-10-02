@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-    Use:   "ezlab",
+    Use:   "ezlabctl",
     Short: "HPE UA deployment tool",
     Long:  `Ezlab is a deployment tool for setting up Ezmeral Unified Analytics on multiple hosts.`,
 }
@@ -20,17 +20,6 @@ func Execute() {
 }
 
 func init() {
-    // Here you will define your flags and configuration settings.
-    statusCmd.Flags().BoolP("watch", "w", false, "Watch the cluster status")
-    deployCmd.Flags().BoolP("template", "t", false, "Recreate templates")
-    deployCmd.Flags().BoolP("prechecks", "p", false, "Run prechecks")
-    deployCmd.Flags().BoolP("init", "i", false, "Initialize orchestrator")
-
-    // Here we will add subcommands like prepare, deploy, etc.
-    rootCmd.AddCommand(prepareCmd)
-    rootCmd.AddCommand(setupCmd)
-    rootCmd.AddCommand(deployCmd)
-    rootCmd.AddCommand(statusCmd)
-    rootCmd.AddCommand(kubeconfCmd)
-    rootCmd.AddCommand(uiCmd)
+    // Flags and configuration settings
+    // Subcommands
 }
