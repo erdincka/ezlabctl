@@ -14,17 +14,19 @@ var uiCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {
         log.Println("Get the ui endpoint...")
 
-        _, ezlabFiles, _ := internal.GetDeployConfig()
+        _, ezlabFiles, uaConfig := internal.GetDeployConfig()
 
-        exitCode, err := internal.RunCommand(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
-        if err != nil {
-            log.Printf("Error: %v\n", err)
-        } else {
-            if exitCode!= 0 {
-                log.Printf("Error: %v\n", err)
-            }
-            log.Println("Done")
-        }
+        uiHosts := internal.GetCommandOutput(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
+        log.Printf("Update DNS to point %s to %s", uaConfig.Domain, uiHosts)
+        // exitCode, err := internal.RunCommand(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
+        // if err != nil {
+        //     log.Printf("Error: %v\n", err)
+        // } else {
+        //     if exitCode!= 0 {
+        //         log.Printf("Error: %v\n", err)
+        //     }
+        //     log.Println("Done")
+        // }
         // kubectl -n istio-system get pod -l app=istio-ingressgateway -o jsonpath='{.items[*].status.hostIP}'
         // OR
         // nodePort=$(kubectl get service -n ezfabric-ui ezfabric-ui -o jsonpath='{.spec.ports[0].nodePort}')
