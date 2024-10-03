@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-func PrepareCommands(hostname, timezone string) []string {
+func PrepareCommands(hostname string) []string {
 
 	commands := []string{
 		// TODO: Better handling for various resolvers (/etc/[hosts|resolv.conf], resolvectl etc)
@@ -33,7 +33,6 @@ func PrepareCommands(hostname, timezone string) []string {
 		"sudo hostnamectl set-hostname " + hostname,
 		"sudo dnf install -yq glibc-langpack-en",
 		"sudo localectl set-locale LANG=en_US.UTF-8",
-		"sudo timedatectl set-timezone " + timezone,
 		// "echo '" + user + " ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/" + user,
 		// Rocky repository workaround
 		"rpm -e openssl-fips-provider --nodeps || true",
@@ -41,6 +40,20 @@ func PrepareCommands(hostname, timezone string) []string {
 	}
 
 	return commands
+}
+
+func Preinstall(host string) {
+	commands := PrepareCommands(host)
+	for _, command := range commands {
+		// log.Printf("%s: %s", host, command)
+		exitCode, err := RunCommand(command)
+		if err != nil {
+			log.Fatal("Error running preinstall: ", err)
+		}
+		if exitCode > 0 {
+			log.Fatal("Pre-install configuration failed on ", host, exitCode)
+		}
+	}
 }
 
 
@@ -56,10 +69,6 @@ func DfInstallerCommands(username, repo string) []string {
 	return commands
 }
 
-
-func GetLocalTimeZone() string {
-	return GetCommandOutput("timedatectl show --property=Timezone --value")
-}
 
 func GetCommandOutput(command string) string {
 	args := strings.Split(command, " ")
