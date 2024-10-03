@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -82,8 +80,6 @@ func GetUAInput() (*AppConfig, error) {
 	registryPassword := AskForInput("Enter Registry Password", appConfig.RegistryPassword)
 	registryInsecure := AskForInput("Is Registry Insecure", fmt.Sprint(appConfig.RegistryInsecure))
 
-    tz := GetCommandOutput("timedatectl show --property=Timezone --value")
-
     // Save the configuration if all went well
 	appConfig.Orchestrator = orchestrator
 	appConfig.Controller = controller
@@ -91,7 +87,7 @@ func GetUAInput() (*AppConfig, error) {
     appConfig.Username = username
     appConfig.Password = password
     appConfig.Domain =   domain
-    appConfig.Timezone = string(tz)
+    appConfig.Timezone = GetLocalTimeZone()
 	appConfig.RegistryUrl = registryUrl
 	appConfig.RegistryUsername = registryUsername
 	appConfig.RegistryPassword = registryPassword
@@ -312,96 +308,6 @@ func AskForInput(prompt string, defaultValue string) string {
 //     result <- strings.TrimSpace(out.String())
 // 	close(result)
 // }
-
-func GetCommandOutput(command string) string {
-	args := strings.Split(command, " ")
-	cmd := exec.Command(args[0], args[1:]...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	// Set up stdout and stderr redirection to the respective buffers
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		log.Fatal(fmt.Sprint(err) + ": " + stderr.String())
-		return ""
-	}
-
-	// Just log the stderr if any
-	if stderr.Len() > 0 {
-		log.Printf("STDERR: " + stderr.String())
-	}
-	return strings.TrimSpace(out.String())
-}
-
-// runCommand streams the output of a command while it's running and logs the exit code after completion.
-func RunCommand(command string) (int, error) {
-	// Split the command into name and arguments
-	args := strings.Fields(command)
-	cmdName := args[0]
-	cmdArgs := args[1:]
-
-	// Create the command
-	cmd := exec.Command(cmdName, cmdArgs...)
-
-	// Get stdout and stderr pipes
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get stdout pipe: %w", err)
-	}
-
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get stderr pipe: %w", err)
-	}
-
-	// Start the command
-	if err := cmd.Start(); err != nil {
-		return 0, fmt.Errorf("failed to start command: %w", err)
-	}
-
-	// Use sync.WaitGroup to wait for stdout and stderr to finish
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	// Stream stdout and stderr concurrently
-	// Stream stdout and stderr concurrently
-	go func() {
-		defer wg.Done()
-		streamOutput(stdoutPipe, "STDOUT")
-	}()
-
-	go func() {
-		defer wg.Done()
-		streamOutput(stderrPipe, "STDERR")
-	}()
-
-	// Wait for stdout and stderr to be fully read
-	wg.Wait()
-
-	// Wait for the command to finish
-	if err := cmd.Wait(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			// Command exited with a non-zero status code
-			return exitErr.ExitCode(), fmt.Errorf("command failed with exit code %d", exitErr.ExitCode())
-		}
-		return 0, fmt.Errorf("command failed to complete: %w", err)
-	}
-
-	// Command finished successfully
-	return cmd.ProcessState.ExitCode(), nil
-}
-
-// streamOutput reads and logs the output from the provided io.Reader.
-func streamOutput(pipe io.ReadCloser, pipeName string) {
-	scanner := bufio.NewScanner(pipe)
-	for scanner.Scan() {
-		// fmt.Printf("[%s] %s\n", pipeName, scanner.Text())
-		fmt.Println(scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading %s: %v\n", pipeName, err)
-	}
-}
 
 func ReadFile(path string) []byte {
 	// Open the file and defer closing it

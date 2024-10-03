@@ -2,11 +2,12 @@
 
 ## Host requirements
 
-- One Orchestrator host: where you run the `ezlabctl` command, 4 vCPUs, 32GB memory, 1x 500GB data disk
+- Single-host Data Fabric (optional): 16 vCores, 64GB memory, 1x 100GB data disk
+- One Orchestrator host: deployment is initiated here, 4 vCPUs, 32GB memory, 1x 500GB data disk
 - One Controller host: Controlplane for Workload cluster, 4 vCPUs, 32GB memory, 1x 500GB data disk
 - Three Worker hosts: CPU worker nodes, 32 vCPUs, 128GB memory, 2x 500GB data disks
 
-## Prerequisites - tool will take care of these
+<!-- ## Prerequisites - tool will take care of these
 
 - Enable password authtentication for all hosts
 ```bash
@@ -25,13 +26,13 @@ sudo systemctl restart sshd
 ```bash
 echo "ezmeral ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/010_ezlab
 sudo chmod 0440 /etc/sudoers.d/010_ezlab
-```
+``` -->
 
 ### Install single-node Data Fabric:
 
 TODO: Update `.wgetrc` for default repository access.
 
-`ezlabctl datafabric -u ezmeral -p Admin123. -i -r http://10.1.1.4/mapr 10.1.1.11`
+`ezlabctl df -c -i -u ezmeral -p Admin123. -r http://10.1.1.4/mapr/ -d /dev/sda`
 
 ## Deployment
 
@@ -39,6 +40,7 @@ TODO: Update `.wgetrc` for default repository access.
 - Install the binary to `/usr/local/bin`
 - Run `ezlabctl prepare` on the Orchestrator host to setup all hosts for readiness
 - Run `ezlabctl storage` on the Orchestrator host to generate the necessary configuration files from Data Fabric
+NOTE: S3 IAM Policy needs to be applied to EDF.
 - Run `ezlabctl deploy` on the Orchestrator host to deploy the management and then the workload clusters
 
 ## Monitor

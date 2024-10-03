@@ -36,6 +36,6 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-    rootCmd.AddCommand(statusCmd)
+    unifiedAnalyticsCmd.AddCommand(statusCmd)
     statusCmd.Flags().BoolP("watch", "w", false, "Watch the cluster status")
 }

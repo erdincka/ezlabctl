@@ -62,6 +62,6 @@ var kubeconfCmd = &cobra.Command{
 }
 
 func init() {
-    rootCmd.AddCommand(kubeconfCmd)
+    unifiedAnalyticsCmd.AddCommand(kubeconfCmd)
 
 }

@@ -36,6 +36,6 @@ var uiCmd = &cobra.Command{
 }
 
 func init() {
-    rootCmd.AddCommand(uiCmd)
+    unifiedAnalyticsCmd.AddCommand(uiCmd)
 
 }

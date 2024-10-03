@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install MapR
-go run ezlabctl datafabric -u ezmeral -p Admin123. -i -r http://10.1.1.4/mapr 10.1.1.11
+go run ezlabctl df -c -i -u ezmeral -p Admin123. -r http://10.1.1.4/mapr/ -d /dev/sda
 
 # Install UA
 go run ezlabctl prepare

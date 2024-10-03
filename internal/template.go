@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,5 +55,5 @@ func ProcessTemplate(inputFile string, outputFile string, data UAConfig) {
 		log.Fatalf("failed to write output file: %v", err)
 	}
 
-	fmt.Printf("Template saved to %s\n", outputFile)
+	log.Printf("Template saved to %s\n", outputFile)
 }

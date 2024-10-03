@@ -9,7 +9,7 @@ import (
 var rootCmd = &cobra.Command{
     Use:   "ezlabctl",
     Short: "HPE UA deployment tool",
-    Long:  `Ezlab is a deployment tool for setting up Ezmeral Unified Analytics on multiple hosts.`,
+    Long:  `Ezlabctl is a deployment tool for setting up Ezmeral Data Fabric and Unified Analytics for testing purposes.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -21,5 +21,7 @@ func Execute() {
 
 func init() {
     // Flags and configuration settings
+
     // Subcommands
+    // rootCmd.AddCommand(datafabricCmd, unifiedAnalyticsCmd)
 }
