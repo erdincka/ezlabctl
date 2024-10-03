@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -87,7 +88,6 @@ func GetUAInput() (*AppConfig, error) {
     appConfig.Username = username
     appConfig.Password = password
     appConfig.Domain =   domain
-    appConfig.Timezone = GetLocalTimeZone()
 	appConfig.RegistryUrl = registryUrl
 	appConfig.RegistryUsername = registryUsername
 	appConfig.RegistryPassword = registryPassword
@@ -324,4 +324,18 @@ func ReadFile(path string) []byte {
 	}
 
 	return data
+}
+
+func GetStringInput(cmd *cobra.Command, param, prompt, defaultValue string) string {
+	var input string
+	var err error
+	if cmd.Flags().Changed(param) {
+		input, err = cmd.Flags().GetString(param)
+		if err != nil {
+			log.Fatal("failed to get host value: %w", err)
+		}
+	} else {
+		input = AskForInput(prompt, defaultValue)
+	}
+	return input
 }

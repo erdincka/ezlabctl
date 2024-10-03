@@ -36,9 +36,19 @@ TODO: Update `.wgetrc` for default repository access.
 
 ## Deployment
 
-- Download the latest release from [Github](https://github.com/erdincka/ua-rpm/releases)
-- Install the binary to `/usr/local/bin`
-- Run `ezlabctl prepare` on the Orchestrator host to setup all hosts for readiness
+<!-- - Download the latest release from [Github](https://github.com/erdincka/ua-rpm/releases) -->
+<!-- - Install the binary to `/usr/local/bin` -->
+- Download and install the rpm package `rpm -ivh https://github.com/erdincka/ua-rpm/releases/download/v0.1.2/ezlabctl-0.1.2-1.x86_64.rpm`
+- Run `ezlabctl ua -c -s -t -w 10.1.1.33 -u ezmeral -p Admin123.` on the Orchestrator host to setup all hosts for readiness
+```ini
+[Parameters]
+-c=configure host(s)
+-s=configure storage
+-t=update templates
+-u=ssh user
+-p=ssh password
+-w=workers
+```
 - Run `ezlabctl storage` on the Orchestrator host to generate the necessary configuration files from Data Fabric
 NOTE: S3 IAM Policy needs to be applied to EDF.
 - Run `ezlabctl deploy` on the Orchestrator host to deploy the management and then the workload clusters

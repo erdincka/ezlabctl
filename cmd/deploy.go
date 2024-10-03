@@ -113,7 +113,7 @@ var deployCmd = &cobra.Command{
 
 
 func init() {
-	unifiedAnalyticsCmd.AddCommand(deployCmd)
+	// unifiedAnalyticsCmd.AddCommand(deployCmd)
 
     deployCmd.Flags().BoolP("template", "t", false, "Recreate templates")
     deployCmd.Flags().BoolP("prechecks", "p", false, "Run prechecks")

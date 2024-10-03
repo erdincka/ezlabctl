@@ -14,7 +14,6 @@ type AppConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
     Domain string `json:"domain"`
-    Timezone string `json:"timezone"`
 	RegistryUrl string `json:"registryurl"`
 	RegistryUsername string `json:"registryusername"`
 	RegistryPassword string `json:"registrypassword"`

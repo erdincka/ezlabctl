@@ -38,7 +38,7 @@ var prepareCmd = &cobra.Command{
         for _, host := range allHosts {
             wg.Add(1) // Increment the WaitGroup counter
 
-            commands := internal.PrepareCommands(host, nodes.Timezone)
+            commands := internal.PrepareCommands(host)
             // UA requirements below
             commands = append(commands,
                 "sudo subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms",
@@ -53,5 +53,5 @@ var prepareCmd = &cobra.Command{
 }
 
 func init() {
-    rootCmd.AddCommand(prepareCmd)
+    // rootCmd.AddCommand(prepareCmd)
 }

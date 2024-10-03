@@ -104,5 +104,5 @@ func init() {
     storageCmd.Flags().StringP("server", "s", "", "Hostname/IP")
     storageCmd.Flags().StringP("username", "u", "mapr", "Username")
     storageCmd.Flags().StringP("password", "p", "mapr", "Password")
-    unifiedAnalyticsCmd.AddCommand(storageCmd)
+    // unifiedAnalyticsCmd.AddCommand(storageCmd)
 }
