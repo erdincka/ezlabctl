@@ -9,23 +9,20 @@ import (
 	"text/template"
 )
 
-func ProcessTemplates(tempFiles TemplateFiles, deployConf UAConfig) {
-	// _, tempFiles, deployConf := GetDeployConfig()
-
-	err := os.MkdirAll(tempFiles.TemplateDirectory,0755)
+func ProcessTemplates(targetDir string, data UAConfig) {
+	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
 		log.Fatal("Error creating yaml directory: ", err)
 	}
 
 	for _, file := range GetDeploySteps() {
 		// go func(f string) {
-			ProcessTemplate("templates/" + file, tempFiles.TemplateDirectory + "/" + filepath.Base(file), deployConf)
+			ProcessTemplate("templates/" + file, targetDir + "/" + filepath.Base(file), data)
 			log.Println("Processing: " + file)
 		// }(file)
 	}
 
 	log.Println("YAML files ready")
-
 }
 
 func ProcessTemplate(inputFile string, outputFile string, data UAConfig) {

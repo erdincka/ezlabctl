@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -20,9 +21,7 @@ func PrepareCommands(hostname string) []string {
 		"sudo sed -i 's/preserve_hostname:.*/preserve_hostname: true\\nmanage_etc_hosts: false/' /etc/cloud/cloud.cfg",
 		"sudo sed -i 's/ssh_pwauth:.*/ssh_pwauth: true/' /etc/cloud/cloud.cfg",
 		"sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config",
-		// "sudo sed -i 's/^[^#]*PermitRootLogin[[:space:]]no/PermitRootLogin yes/' /etc/ssh/sshd_config",
 		// following file may or may not exist (e.g. in case of cloud-init)
-		// "sudo sed -i 's/^[^#]*PermitRootLogin[[:space:]]no/PermitRootLogin yes/' /etc/ssh/sshd_config.d/50-cloud-init.conf || true",
 		"sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/50-cloud-init.conf || true",
 		"sudo systemctl restart sshd",
 		// set host resolution for IPv4
@@ -35,28 +34,57 @@ func PrepareCommands(hostname string) []string {
 		"sudo localectl set-locale LANG=en_US.UTF-8",
 		// "echo '" + user + " ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/" + user,
 		// Rocky repository workaround
-		"rpm -e openssl-fips-provider --nodeps || true",
+		"sudo rpm -e openssl-fips-provider --nodeps || true",
 		"sudo dnf upgrade -yq",
 	}
 
 	return commands
 }
 
-func Preinstall(host string) {
-	commands := PrepareCommands(host)
-	for _, command := range commands {
-		// log.Printf("%s: %s", host, command)
+func Preinstall(hostname string, extraCommands []string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	commands := PrepareCommands(hostname)
+	for _, command := range append(commands, extraCommands...) {
+		// log.Printf("%s: %s", hostname, command)
 		exitCode, err := RunCommand(command)
 		if err != nil {
 			log.Fatal("Error running preinstall: ", err)
 		}
 		if exitCode > 0 {
-			log.Fatal("Pre-install configuration failed on ", host, exitCode)
+			log.Fatal("Pre-install configuration failed on ", hostname, exitCode)
 		}
 	}
 }
 
+func PreinstallOverSsh(hostname, sshuser, sshpass string) {
+	commands := PrepareCommands(hostname)
+	err := SshCommands(hostname, sshuser, sshpass, commands)
+	if err != nil {
+		log.Fatal("Error running preinstall: ", err)
+	}
+}
 
+func DfSetupForUACommands(dfuser, dfpass string, files []string) []string {
+	commands := []string{
+        "id ezua || sudo useradd -m -U ezua",
+        "echo ezua:" + dfpass + " | sudo chpasswd",
+        "[ -f /tmp/maprticket_$(id -u) ] || echo " + dfpass + " | maprlogin password -user " + dfuser,
+        "echo Setting up the UA volumes...",
+        "maprcli acl edit -type cluster -user ezua:login,cv",
+        "maprcli volume create -name ezua-base-volume-ezua -path /ezua -type rw -json -rootdiruser ezua -rootdirgroup ezua -createparent true || true",
+        "[ -f /tmp/ezua-maprtenantticket ] || maprlogin generateticket -type tenant -user ezua -out /tmp/ezua-maprtenantticket",
+        "[ -f /tmp/ezua-cldb-nodes.json ] || /opt/mapr/bin/maprcli node list -columns hn -filter svc==cldb -json > /tmp/ezua-cldb-nodes.json",
+        "[ -f /tmp/ezua-rest-nodes.json ] || /opt/mapr/bin/maprcli node list -columns hn -filter svc==apiserver -json > /tmp/ezua-rest-nodes.json",
+        "[ -f /tmp/ezua-s3-nodes.json ] || /opt/mapr/bin/maprcli node list -columns hn -filter svc==s3server -json > /tmp/ezua-s3-nodes.json",
+        "[ -f /tmp/ezua-s3-keys.json ] || maprcli s3keys generate -domainname primary -accountname default -username ezua -json > /tmp/ezua-s3-keys.json",
+		"[ -f /tmp/ezua-chain-ca.pem ] || cp /opt/mapr/conf/ca/chain-ca.pem /tmp/ezua-chain-ca.pem",
+        "sudo chown mapr:mapr /tmp/" + strings.Join(files, " /tmp/"),
+        // "[ -d /mapr ] || sudo mkdir /mapr",
+        // "mount | grep -q /mapr || sudo mount -t nfs -o vers=3,nolock " + dfhost + ":/mapr/ /mapr",
+    }
+
+	return commands
+}
 func DfInstallerCommands(username, repo string) []string {
 	commands := []string{
 		"command -v wget || sudo dnf install -yq wget",
@@ -99,7 +127,7 @@ func RunCommand(command string) (int, error) {
 
 	// Create the command
 	// cmd := exec.Command(cmdName, cmdArgs...)
-	log.Println("Running command:", command)
+	log.Println("[LOCAL]:", command)
 	cmd := exec.Command("/bin/bash", "-c", command)
 
 	// Get stdout and stderr pipes
@@ -118,10 +146,8 @@ func RunCommand(command string) (int, error) {
 		return 0, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// Use sync.WaitGroup to wait for stdout and stderr to finish
 	var wg sync.WaitGroup
 	wg.Add(2)
-
 	// Stream stdout and stderr concurrently
 	// Stream stdout and stderr concurrently
 	go func() {
@@ -159,5 +185,13 @@ func streamOutput(pipe io.ReadCloser, pipeName string) {
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading %s: %v\n", pipeName, err)
+	}
+}
+
+func IfRoot(prompt string) {
+	if os.Geteuid() == 0 {
+		log.Println(prompt)
+	} else {
+		log.Printf("You must be root to run this command. Now using UID: %d", os.Geteuid())
 	}
 }

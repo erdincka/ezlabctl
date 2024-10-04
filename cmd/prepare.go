@@ -4,15 +4,14 @@ import (
 	"ezlabctl/internal"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/spf13/cobra"
 )
 
 // prepareCmd represents the prepare command
 var prepareCmd = &cobra.Command{
-    Use:   "prepare",
-    Short: "Prepare the system for deployment",
+    Use:   "prepare (deprecated)",
+    Short: "Deprecated - Use with caution! Prepare the UA systems for deployment",
     Run: func(cmd *cobra.Command, args []string) {
 
         log.Println("Prepare the nodes for installation...")
@@ -33,11 +32,7 @@ var prepareCmd = &cobra.Command{
         }(append(nodes.Workers, nodes.Controller, nodes.Orchestrator))
 
         // Run commands on all hosts
-        var wg sync.WaitGroup // Create a WaitGroup
-
         for _, host := range allHosts {
-            wg.Add(1) // Increment the WaitGroup counter
-
             commands := internal.PrepareCommands(host)
             // UA requirements below
             commands = append(commands,
@@ -45,13 +40,12 @@ var prepareCmd = &cobra.Command{
                 "sudo systemctl enable --now rpc-statd", // FIX: mount option nolock is not propogated here
             )
             // Run the commands using goroutines
-            go internal.SSHCommands(host, nodes.Username, nodes.Password, commands, &wg) // Launch the SSH command in a new goroutine
+            go internal.SshCommands(host, nodes.Username, nodes.Password, commands) // Launch the SSH command in a new goroutine
         }
-        wg.Wait() // Wait for all goroutines to finish
         log.Println("Hosts ready for installation!")
     },
 }
 
 func init() {
-    // rootCmd.AddCommand(prepareCmd)
+    rootCmd.AddCommand(prepareCmd)
 }

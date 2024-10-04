@@ -4,10 +4,23 @@ import (
 	"ezlabctl/internal"
 	"fmt"
 	"log"
-	"os"
+	"sync"
 
 	"github.com/spf13/cobra"
 )
+
+var repo, disk string
+
+func init() {
+	rootCmd.AddCommand(datafabricCmd)
+	datafabricCmd.Flags().BoolP("configure", "c", false, "Run pre-install configuration steps")
+    datafabricCmd.Flags().BoolP("installer", "i", false, "Deploy mapr-installer")
+    datafabricCmd.Flags().StringVarP(&sshuser, "username", "u", "", "SSH User")
+    datafabricCmd.Flags().StringVarP(&sshpass,"password", "p", "", "SSH Password")
+    datafabricCmd.Flags().StringVarP(&repo, "repo", "r", "https://package.ezmeral.hpe.com/releases", "MapR Repo (use your HPE Passport credentials in ~/.wgetrc if using default)")
+    datafabricCmd.Flags().StringVarP(&disk, "disk", "d", "/dev/sdb", "MapR data disk")
+    // datafabricCmd.Flags().String("host", "", "IP/FQDN to install")
+}
 
 var datafabricCmd = &cobra.Command{
     Use:   "df",
@@ -18,11 +31,8 @@ var datafabricCmd = &cobra.Command{
 		var err error = nil
 		host := internal.GetOutboundIP()
 
-		if os.Geteuid() != 0 {
-			log.Fatalf("You must be root to run this command. Now using UID: %d", os.Geteuid())
-		} else {
-			log.Println("Setting up host for Data Fabric installation")
-		}
+		// Check root privileges
+		internal.IfRoot("Setting up host for Data Fabric installation")
 
 		dfNode, err := internal.ResolveNode(host)
 		if err != nil {
@@ -30,22 +40,28 @@ var datafabricCmd = &cobra.Command{
 		}
 		df := *dfNode
 
+		// if cmd.Flags().Changed("configure") {
 		if cmd.Flags().Changed("configure") {
 			log.Println("Preinstall setup...")
-			internal.Preinstall(df.FQDN)
+
+			// Commands required only for DF
+			extraCommands := []string {}
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			internal.Preinstall(df.FQDN, extraCommands, &wg)
+			wg.Wait()
 		}
 
 		if cmd.Flags().Changed("installer") {
-			var username, password, repo, disk string
 			// Need credentials and repo if installer is set
-			username = internal.GetStringInput(cmd, "username", "Username", "root")
-			password = internal.GetStringInput(cmd, "password", "Password", "")
+			sshuser = internal.GetStringInput(cmd, "username", "Username", "root")
+			sshpass = internal.GetStringInput(cmd, "password", "Password", "")
 			disk = internal.GetStringInput(cmd, "disk", "Data Disk", "/dev/sdb")
 			repo = internal.GetStringInput(cmd, "repo", "MapR Repo", "https://package.ezmeral.hpe.com/releases")
 			// TODO: check if repo is accessible and ask for credentials if auth needed
 
 			log.Println("Deploying mapr-installer...")
-			Installer(df.FQDN, username, password, repo, disk)
+			Installer(df.FQDN, sshuser, sshpass, repo, disk)
 		}
 
 		exitCode, err := internal.RunCommand("[ -f /opt/mapr/conf/mapr-clusters.conf ] || sudo /opt/mapr/installer/bin/mapr-installer-cli install -nvpf -t /tmp/mapr-stanza.yaml -u mapr:mapr@127.0.0.1:9443")
@@ -58,17 +74,6 @@ var datafabricCmd = &cobra.Command{
 
 		log.Printf("EDF deployed on %s\n", df.FQDN)
     },
-}
-
-func init() {
-	rootCmd.AddCommand(datafabricCmd)
-	datafabricCmd.Flags().BoolP("configure", "c", false, "Run pre-install configuration steps")
-    datafabricCmd.Flags().BoolP("installer", "i", false, "Deploy mapr-installer")
-    datafabricCmd.Flags().StringP("username", "u", "", "SSH User")
-    datafabricCmd.Flags().StringP("password", "p", "", "SSH Password")
-    datafabricCmd.Flags().StringP("repo", "r", "https://package.ezmeral.hpe.com/releases", "MapR Repo (use your HPE Passport credentials in ~/.wgetrc if using default)")
-    datafabricCmd.Flags().StringP("disk", "d", "/dev/sdb", "MapR data disk")
-    // datafabricCmd.Flags().String("host", "", "IP/FQDN to install")
 }
 
 func Installer(host, username, password, repo, disk string) {

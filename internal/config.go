@@ -9,16 +9,14 @@ import (
 	"strings"
 )
 
-var deploySteps = map[string]string{
-	"prechecks":        "00-prechecks.yaml",
-	"fabricinit":       "01-fabricctl-init.yaml",
-	"workloadprepare":  "02-workload-prepare.yaml",
-	"workloaddeploy":   "03-workload-deploy.yaml",
-	"fabriccluster":    "04-ezfabric-cluster.yaml",
-}
-
 func GetDeploySteps() (map[string]string) {
-	return deploySteps
+	return map[string]string{
+		"prechecks":        "00-prechecks.yaml",
+		"fabricinit":       "01-fabricctl-init.yaml",
+		"workloadprepare":  "02-workload-prepare.yaml",
+		"workloaddeploy":   "03-workload-deploy.yaml",
+		"fabriccluster":    "04-ezfabric-cluster.yaml",
+	}
 }
 
 func GetDeployConfig() (string, TemplateFiles, UAConfig) {
@@ -36,7 +34,7 @@ func GetDeployConfig() (string, TemplateFiles, UAConfig) {
 	authData := map[string]interface{}{
 		"admin_user": map[string]string{
 			"fullname": "Ezmeral Admin",
-			"email":    fmt.Sprintf("ezadmin@%s", appConfig.Domain),
+			"email":    fmt.Sprintf("admin@%s", appConfig.Domain),
 			"username": "admin",
 			"password": appConfig.Password,
 		},
@@ -98,16 +96,16 @@ func GetMaprConfig() DFConfig {
 
 	dfConfig := DFConfig{}
 
-	fileContent := ReadFile("/tmp/cldb_nodes.json")
+	fileContent := ReadFile("/tmp/ezua-cldb-nodes.json")
 	dfConfig.CldbNodes = ipV4re.FindString(string(fileContent))
 
-	fileContent = ReadFile("/tmp/rest_nodes.json")
+	fileContent = ReadFile("/tmp/ezua-rest-nodes.json")
 	dfConfig.RestNodes = ipV4re.FindString(string(fileContent))
 
-	fileContent = ReadFile("/tmp/s3_nodes.json")
+	fileContent = ReadFile("/tmp/ezua-s3-nodes.json")
 	dfConfig.S3Nodes = ipV4re.FindString(string(fileContent))
 
-	fileContent = ReadFile("/tmp/s3_keys.json")
+	fileContent = ReadFile("/tmp/ezua-s3-keys.json")
 	accessKeyMatch := accessKeyRe.FindStringSubmatch(string(fileContent))
 	if len(accessKeyMatch) < 2 {
 		log.Fatalf("accesskey not found")
@@ -120,10 +118,13 @@ func GetMaprConfig() DFConfig {
 	}
 	dfConfig.SecretKey = base64.StdEncoding.EncodeToString([]byte(secretKeyMatch[1]))
 
-	fileContent = ReadFile("/tmp/maprtenantticket")
+	fileContent = ReadFile("/tmp/ezua-maprtenantticket")
 	dfConfig.ClusterName = strings.Split(string(fileContent), " ")[0]
 	dfConfig.TenantTicket = base64.StdEncoding.EncodeToString([]byte(fileContent))
 	log.Printf("Using Data Fabric Cluster: %s\n", dfConfig.ClusterName)
+
+	fileContent = ReadFile("/tmp/ezua-chain-ca.pem")
+	dfConfig.CAChain = base64.StdEncoding.EncodeToString([]byte(fileContent))
 
 	return dfConfig
 }

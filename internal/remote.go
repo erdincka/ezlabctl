@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -62,22 +62,20 @@ func SSHCommand(host string, user string, password string, cmd string) error {
     return nil
 }
 
-// SSHCommands runs a list of ssh commands on multiple remote systems in parallel using goroutines
-func SSHCommands(host string, user string, password string, cmds []string, wg *sync.WaitGroup) error {
+func SshCommands(host string, user string, password string, cmds []string) error {
     for _, cmd := range cmds {
+        log.Printf("[%s]: %s", host, cmd)
         err := SSHCommand(host, user, password, cmd)
         if err != nil {
-            log.Fatalln("Error running:", host, ":", err)
+            log.Fatalf("[%s]: %v", host, err)
         }
     }
-    // Notify when finished with all commmands
-    wg.Done()
     return nil
 }
 
 
 // Function to SCP files matching the list from a remote host
-func SCPGetFiles(host, user, pass, sourceDir, destinationDir string, fileList []string) {
+func ScpGetFiles(host, user, pass, sourceDir, destinationDir string, fileList []string) {
 
     // Save password to file for later use
     passfile := ".sshpass"
@@ -99,12 +97,12 @@ func SCPGetFiles(host, user, pass, sourceDir, destinationDir string, fileList []
         command := fmt.Sprintf("sshpass -f %s scp -o StrictHostKeyChecking=no %s@%s:%s %s", passfile, user, host, remoteFile, localFile)
         // log.Println("Copying file", file)
 		// Execute the SCP command
-        exitCode, err := RunCommand(command)
+        _, err := RunCommand(command)
         if err != nil {
             log.Fatalf("failed to copy file:%s %v", command, err)
-        } else {
-            log.Printf("scp command: %s returned exit code: %d\n", command, exitCode)
-        }
+        } //else {
+        //     log.Printf("[SCP]: %s: %d\n", command, exitCode)
+        // }
 	}
 
     // Remove the password file
@@ -155,4 +153,50 @@ func GetOutboundIP() string {
     localAddr := conn.LocalAddr().(*net.UDPAddr)
 
     return localAddr.IP.String()
+}
+
+// testCredentials tests SSH connectivity
+func TestCredentials(ip string, username *string, password *string) error {
+    // log.Printf("Checking node: %s with user %s and password %s", ip, *username, *password)
+    // Test SSH connection and sudo access
+    err := testSSHAndSudo(ip, *username, *password)
+    if err != nil {
+        log.Fatalf("Connection failed to host %s: %v\n", ip, err)
+    } else {
+        log.Printf("[%s] Connection is successful and passwordless sudo validated!\n", ip)
+    }
+	return nil
+}
+
+// testSSHAndSudo checks if the node can be accessed via SSH and sudo
+func testSSHAndSudo(ip string, username string, password string) error {
+	config := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second,
+	}
+
+	client, err := ssh.Dial("tcp", net.JoinHostPort(ip, "22"), config)
+	if err != nil {
+		return fmt.Errorf("failed to dial SSH: %w", err)
+	}
+	defer client.Close()
+
+	// Run a command to test sudo access
+	session, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create SSH session: %w", err)
+	}
+	defer session.Close()
+
+	cmd := "sudo -n true"
+	err = session.Run(cmd)
+	if err != nil {
+		return fmt.Errorf("sudo failed, passwordless sudo not enabled for %s: %w", ip, err)
+	}
+
+	return nil
 }

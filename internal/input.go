@@ -10,11 +10,8 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh"
 )
 
 // GetUAInput collects node details, credentials, and checks connectivity
@@ -68,13 +65,10 @@ func GetUAInput() (*AppConfig, error) {
     // Get domain
     domain := AskForInput("Enter UA domain", appConfig.Domain)
 
-	var wg sync.WaitGroup // Create a WaitGroup
     // Test connection to all nodes
     for _, node := range append(workers, controller, orchestrator) {
-        wg.Add(1)
-        go testCredentials(node, &username, &password, &wg)
+        go TestCredentials(node.IP, &username, &password)
     }
-    wg.Wait()
 
 	registryUrl := AskForInput("Enter Registry URL (without http[s])", appConfig.RegistryUrl)
 	registryUsername := AskForInput("Enter Registry Username", appConfig.RegistryUsername)
@@ -172,56 +166,6 @@ func ResolveNode(node string) (*Node, error) {
 		FQDN: fqdn,
 		IP:   ip,
 	}, nil
-}
-
-// testCredentials tests SSH connectivity
-func testCredentials(node Node, username *string, password *string, wg *sync.WaitGroup) error {
-    defer wg.Done()
-
-    for {
-		// Test SSH connection and sudo access
-		err := testSSHAndSudo(node, *username, *password)
-		if err != nil {
-			log.Fatalf("Connection failed: %v. Please re-enter the credentials.\n", err)
-		} else {
-			log.Printf("Connection to %s successful and passwordless sudo validated!\n", node.FQDN)
-			break
-		}
-	}
-	return nil
-}
-
-// testSSHAndSudo checks if the node can be accessed via SSH and sudo
-func testSSHAndSudo(node Node, username string, password string) error {
-	config := &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
-	}
-
-	client, err := ssh.Dial("tcp", net.JoinHostPort(node.IP, "22"), config)
-	if err != nil {
-		return fmt.Errorf("failed to dial SSH: %w", err)
-	}
-	defer client.Close()
-
-	// Run a command to test sudo access
-	session, err := client.NewSession()
-	if err != nil {
-		return fmt.Errorf("failed to create SSH session: %w", err)
-	}
-	defer session.Close()
-
-	cmd := "sudo -n true"
-	err = session.Run(cmd)
-	if err != nil {
-		return fmt.Errorf("sudo failed, passwordless sudo not enabled for %s: %w", node.IP, err)
-	}
-
-	return nil
 }
 
 // saveConfig saves the node configuration to a JSON file

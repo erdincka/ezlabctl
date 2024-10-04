@@ -31,6 +31,7 @@ type DFConfig struct {
 	SecretKey string `json:"s3secretkey"`
 	TenantTicket string `json:"tenantticket"`
 	ClusterName string `json:"clustername"`
+	CAChain string `json:"cachain"`
 }
 
 // UAConfig holds the controller and worker node details and common credentials

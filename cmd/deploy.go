@@ -12,7 +12,8 @@ var deployCmd = &cobra.Command{
     Short: "Update yaml files and start the installer",
     Run: func(cmd *cobra.Command, args []string) {
 
-        clusterName, ezlabFiles, deployConf := internal.GetDeployConfig()
+        // clusterName, ezlabFiles, deployConf := internal.GetDeployConfig()
+        clusterName, ezlabFiles, _ := internal.GetDeployConfig()
         deploySteps := internal.GetDeploySteps()
 
         if clusterName == "" {
@@ -24,7 +25,7 @@ var deployCmd = &cobra.Command{
         // Check if the templating flag is provided
         if cmd.Flags().Changed("template") {
             log.Println("Recreate templates...")
-            internal.ProcessTemplates(ezlabFiles, deployConf)
+            // internal.ProcessTemplates(ezlabFiles, deployConf)
         }
 
         if cmd.Flags().Changed("prechecks") {
@@ -44,7 +45,7 @@ var deployCmd = &cobra.Command{
 
         if cmd.Flags().Changed("init") {
             log.Println("Initializing the orchestrator fabric...")
-            orchInitCmd := "ezfabricctl orchestrator init --input " + ezlabFiles.TemplateDirectory + "/" + deploySteps["fabricinit"] + "--releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + ezlabFiles.OrchestratorKubeConfig
+            orchInitCmd := "ezfabricctl orchestrator init --input " + ezlabFiles.TemplateDirectory + "/" + deploySteps["fabricinit"] + " --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + ezlabFiles.OrchestratorKubeConfig
             log.Println(orchInitCmd)
             exitCode, err := internal.RunCommand(orchInitCmd)
             if err != nil {
