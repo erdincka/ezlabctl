@@ -85,6 +85,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		}
 
 	},
+
     Run: func(cmd *cobra.Command, args []string) {
 		var err error = nil
 
@@ -312,5 +313,6 @@ var unifiedAnalyticsCmd = &cobra.Command{
 
 			log.Println("EzUA deployment started.")
 		}
+		log.Println("Done.")
 	},
 }
