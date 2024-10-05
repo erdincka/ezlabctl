@@ -25,7 +25,7 @@ func init() {
 	unifiedAnalyticsCmd.Flags().BoolP("configure", "c", false, "Run pre-install configuration steps")
 	unifiedAnalyticsCmd.Flags().BoolP("attach", "a", false, "Prepare external storage to attach to UA")
 	unifiedAnalyticsCmd.Flags().BoolP("template", "t", false, "Update yaml templates for deployment")
-	unifiedAnalyticsCmd.Flags().BoolP("prechecks", "v", false, "Verify node readiness for deployment")
+	unifiedAnalyticsCmd.Flags().BoolP("validate", "v", false, "Verify node readiness for deployment")
 	unifiedAnalyticsCmd.Flags().BoolP("orchinit", "o", false, "Install orchestrator on this node")
 	unifiedAnalyticsCmd.Flags().Bool("confirm", false, "Confirm deployment for workload cluster")
     unifiedAnalyticsCmd.PersistentFlags().StringVarP(&sshuser, "sshuser", "u", "ezmeral", "SSH User")
@@ -45,8 +45,8 @@ func init() {
 
 var unifiedAnalyticsCmd = &cobra.Command{
     Use:   	"ua",
-	Short: 	"Install Unified Analytics, run prechecks if -p flag is set, install orchestrator if -o flag is set etc",
-	Long: 	"",
+	Short: 	"Prepare, Configure and Install Unified Analytics",
+	Long: 	"see README.md",
 	PreRun: func (cmd *cobra.Command, args []string)  {
 		// Ensure credentials for remote hosts
 		// master, _ := cmd.Flags().GetIP("master")
@@ -55,12 +55,14 @@ var unifiedAnalyticsCmd = &cobra.Command{
 			cmd.MarkFlagRequired("sshuser")
 			cmd.MarkFlagRequired("sshpass")
 		}
+
 		attach, _ := cmd.Flags().GetBool("attach")
 		if attach {
 			cmd.MarkFlagRequired("dfhost")
 			cmd.MarkFlagRequired("dfuser")
 			cmd.MarkFlagRequired("dfpass")
 		}
+
 		template, _ := cmd.Flags().GetBool("template")
 		if template {
 			cmd.MarkFlagRequired("domain")
@@ -71,6 +73,17 @@ var unifiedAnalyticsCmd = &cobra.Command{
 				log.Fatal("Need at least three workers")
 			}
 		}
+
+		validate, _ := cmd.Flags().GetStringSlice("validate")
+		if template {
+			cmd.MarkFlagRequired("master")
+			cmd.MarkFlagRequired("worker")
+			input, _ := cmd.Flags().GetIPSlice("worker")
+			if len(input) < 3 {
+				log.Fatal("Need at least three workers")
+			}
+		}
+
 	},
     Run: func(cmd *cobra.Command, args []string) {
 		var err error = nil
@@ -216,7 +229,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 
 		deploySteps := internal.GetDeploySteps()
 
-		if cmd.Flags().Changed("prechecks") {
+		if cmd.Flags().Changed("validate") {
             log.Println("Running prechecks...")
             precheckCmd := "/usr/local/bin/ezfabricctl prechecks --input " + templateFiles.TemplateDirectory + "/" + deploySteps["prechecks"] + " --parallel=true --cleanup=true"
             log.Println(precheckCmd)
