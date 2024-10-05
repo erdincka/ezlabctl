@@ -192,6 +192,6 @@ func IfRoot(prompt string) {
 	if os.Geteuid() == 0 {
 		log.Println(prompt)
 	} else {
-		log.Printf("You must be root to run this command. Now using UID: %d", os.Geteuid())
+		log.Fatalf("You must be root to run this command. Now using UID: %d", os.Geteuid())
 	}
 }

@@ -133,10 +133,10 @@ func GetDFInput() (*AppConfig, error) {
 func getFqdn(ip string) (string) {
     names, err := net.LookupAddr(ip)
     if err != nil || len(names) == 0 {
-        fmt.Printf("Failed to get FQDN for %s", ip)
+        log.Fatalf("Failed to get FQDN for %s\n", ip)
     }
-    // fmt.Printf("Found fqdn for %s: %s", ip, names[0])
-    return strings.TrimRight(names[0], ".")
+	// log.Printf("Found FQDNs for %s: %s", ip, names)
+	return strings.TrimRight(names[0], ".")
 
 }
 // ResolveNode validates and resolves the FQDN and IP for the given input

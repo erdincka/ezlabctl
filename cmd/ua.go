@@ -74,8 +74,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 			}
 		}
 
-		validate, _ := cmd.Flags().GetStringSlice("validate")
-		if template {
+		validate, _ := cmd.Flags().GetBool("validate")
+		if validate {
 			cmd.MarkFlagRequired("master")
 			cmd.MarkFlagRequired("worker")
 			input, _ := cmd.Flags().GetIPSlice("worker")

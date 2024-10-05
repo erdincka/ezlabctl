@@ -2,3 +2,4 @@ ezlabctl
 ezlab.json
 log/
 .ezstatus
+.vscode

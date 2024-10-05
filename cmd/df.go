@@ -25,7 +25,6 @@ func init() {
 var datafabricCmd = &cobra.Command{
     Use:   "df",
 	Short: "Install Data Fabric, runs pre-install configuration if -c flag is set, deploys installer if -i flag is set",
-	// Args: cobra.ExactArgs(1),
     Run: func(cmd *cobra.Command, args []string) {
 
 		var err error = nil
