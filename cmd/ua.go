@@ -52,22 +52,22 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		// master, _ := cmd.Flags().GetIP("master")
 		// workers, _ := cmd.Flags().GetIPSlice("worker")
 		if master != nil || len(workers) > 0 {
-			cmd.MarkFlagRequired("sshuser")
-			cmd.MarkFlagRequired("sshpass")
+			_ = cmd.MarkFlagRequired("sshuser")
+			_ = cmd.MarkFlagRequired("sshpass")
 		}
 
 		attach, _ := cmd.Flags().GetBool("attach")
 		if attach {
-			cmd.MarkFlagRequired("dfhost")
-			cmd.MarkFlagRequired("dfuser")
-			cmd.MarkFlagRequired("dfpass")
+			_ = cmd.MarkFlagRequired("dfhost")
+			_ = cmd.MarkFlagRequired("dfuser")
+			_ = cmd.MarkFlagRequired("dfpass")
 		}
 
 		template, _ := cmd.Flags().GetBool("template")
 		if template {
-			cmd.MarkFlagRequired("domain")
-			cmd.MarkFlagRequired("master")
-			cmd.MarkFlagRequired("worker")
+			_ = cmd.MarkFlagRequired("domain")
+			_ = cmd.MarkFlagRequired("master")
+			_ = cmd.MarkFlagRequired("worker")
 			input, _ := cmd.Flags().GetIPSlice("worker")
 			if len(input) < 3 {
 				log.Fatal("Need at least three workers")
@@ -76,8 +76,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 
 		validate, _ := cmd.Flags().GetBool("validate")
 		if validate {
-			cmd.MarkFlagRequired("master")
-			cmd.MarkFlagRequired("worker")
+			_ = cmd.MarkFlagRequired("master")
+			_ = cmd.MarkFlagRequired("worker")
 			input, _ := cmd.Flags().GetIPSlice("worker")
 			if len(input) < 3 {
 				log.Fatal("Need at least three workers")
@@ -87,7 +87,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 	},
 
     Run: func(cmd *cobra.Command, args []string) {
-		var err error = nil
+		var err error
 
 		host := internal.GetOutboundIP()
 
@@ -135,7 +135,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 				}
 
 				// Validate connectivity and sudo permissions
-				internal.TestCredentials(node.IP, &sshuser, &sshpass)
+				err = internal.TestCredentials(node.IP, &sshuser, &sshpass); if err != nil { log.Fatal(err); }
 				// Configure master
 				internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass)
 			}
@@ -159,7 +159,9 @@ var unifiedAnalyticsCmd = &cobra.Command{
 					}
 
 					// Validate connectivity and sudo permissions
-					internal.TestCredentials(node.IP, &sshuser, &sshpass)
+					err = internal.TestCredentials(node.IP, &sshuser, &sshpass); if err!= nil {
+						log.Fatal(err)
+					}
 					// Configure master
 					internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass)
 				}

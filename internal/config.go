@@ -2,8 +2,6 @@ package internal
 
 import (
 	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -19,59 +17,59 @@ func GetDeploySteps() (map[string]string) {
 	}
 }
 
-func GetDeployConfig() (string, TemplateFiles, UAConfig) {
-	appConfig := GetAppConfiguration()
+// func GetDeployConfig() (string, TemplateFiles, UAConfig) {
+// 	appConfig := GetAppConfiguration()
 
-	clusterName := strings.Split(appConfig.Domain, ".")[0]
+// 	clusterName := strings.Split(appConfig.Domain, ".")[0]
 
-	templateFiles := TemplateFiles{
-		TemplateDirectory: "/tmp/ez-" + clusterName,
-		OrchestratorKubeConfig: "/tmp/ez-" + clusterName + "/mgmt-kubeconfig",
-		WorkloadKubeConfig: "/tmp/ez-" + clusterName + "/workload-kubeconfig",
-	}
+// 	templateFiles := TemplateFiles{
+// 		TemplateDirectory: "/tmp/ez-" + clusterName,
+// 		OrchestratorKubeConfig: "/tmp/ez-" + clusterName + "/mgmt-kubeconfig",
+// 		WorkloadKubeConfig: "/tmp/ez-" + clusterName + "/workload-kubeconfig",
+// 	}
 
-	// Setup auth data for admin user
-	authData := map[string]interface{}{
-		"admin_user": map[string]string{
-			"fullname": "Ezmeral Admin",
-			"email":    fmt.Sprintf("admin@%s", appConfig.Domain),
-			"username": "admin",
-			"password": appConfig.Password,
-		},
-	}
-	// Convert authData to JSON
-	authDataJSON, err := json.Marshal(authData)
-	if err != nil {
-		fmt.Println("Error converting authData to JSON:", err)
-		return "", TemplateFiles{}, UAConfig{}
-	}
-	// log.Println("Auth data: " + string(authDataJSON))
+// 	// Setup auth data for admin user
+// 	authData := map[string]interface{}{
+// 		"admin_user": map[string]string{
+// 			"fullname": "Ezmeral Admin",
+// 			"email":    fmt.Sprintf("admin@%s", appConfig.Domain),
+// 			"username": "admin",
+// 			"password": appConfig.Password,
+// 		},
+// 	}
+// 	// Convert authData to JSON
+// 	authDataJSON, err := json.Marshal(authData)
+// 	if err != nil {
+// 		fmt.Println("Error converting authData to JSON:", err)
+// 		return "", TemplateFiles{}, UAConfig{}
+// 	}
+// 	// log.Println("Auth data: " + string(authDataJSON))
 
-	dfConfig := GetMaprConfig()
-	// log.Printf("DEBUG tenantticket: %v", dfConfig.TenantTicket)
+// 	dfConfig := GetMaprConfig()
+// 	// log.Printf("DEBUG tenantticket: %v", dfConfig.TenantTicket)
 
-	uaConfig := UAConfig{
-		Username: appConfig.Username,
-		Password: appConfig.Password,
-		// Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),
-		Domain: appConfig.Domain,
-		RegistryUrl: appConfig.RegistryUrl,
-		RegistryInsecure: appConfig.RegistryInsecure,
-		RegistryUsername: appConfig.RegistryUsername,
-		RegistryPassword: appConfig.RegistryPassword,
-		RegistryCa: "",
-		// Orchestrator: GetOutboundIP(),
-		Orchestrator: appConfig.Orchestrator.IP,
-		Master: appConfig.Controller.IP,
-		Workers: strings.Split(GetWorkerIPs(), ","),
-		ClusterName: clusterName,
-		AuthData: base64.StdEncoding.EncodeToString(authDataJSON),
-		NoProxy: "10.96.0.0/12,10.224.0.0/16,10.43.0.0/16,192.168.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,169.254.169.254," + GetWorkerIPs() + "," + appConfig.Controller.IP + "," + appConfig.Orchestrator.IP + ",." + appConfig.Domain,
-		DF: dfConfig,
-	}
+// 	uaConfig := UAConfig{
+// 		Username: appConfig.Username,
+// 		Password: appConfig.Password,
+// 		// Password: base64.StdEncoding.EncodeToString([]byte(appConfig.Password)),
+// 		Domain: appConfig.Domain,
+// 		RegistryUrl: appConfig.RegistryUrl,
+// 		RegistryInsecure: appConfig.RegistryInsecure,
+// 		RegistryUsername: appConfig.RegistryUsername,
+// 		RegistryPassword: appConfig.RegistryPassword,
+// 		RegistryCa: "",
+// 		// Orchestrator: GetOutboundIP(),
+// 		Orchestrator: appConfig.Orchestrator.IP,
+// 		Master: appConfig.Controller.IP,
+// 		Workers: strings.Split(GetWorkerIPs(), ","),
+// 		ClusterName: clusterName,
+// 		AuthData: base64.StdEncoding.EncodeToString(authDataJSON),
+// 		NoProxy: "10.96.0.0/12,10.224.0.0/16,10.43.0.0/16,192.168.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,169.254.169.254," + GetWorkerIPs() + "," + appConfig.Controller.IP + "," + appConfig.Orchestrator.IP + ",." + appConfig.Domain,
+// 		DF: dfConfig,
+// 	}
 
-	return clusterName, templateFiles, uaConfig
-}
+// 	return clusterName, templateFiles, uaConfig
+// }
 
 func GetMaprConfig() DFConfig {
 	// Define a regex pattern to match IPv4 addresses

@@ -27,7 +27,7 @@ var datafabricCmd = &cobra.Command{
 	Short: "Install Data Fabric, runs pre-install configuration if -c flag is set, deploys installer if -i flag is set",
     Run: func(cmd *cobra.Command, args []string) {
 
-		var err error = nil
+		var err error
 		host := internal.GetOutboundIP()
 
 		// Check root privileges

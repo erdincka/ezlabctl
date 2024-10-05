@@ -113,7 +113,7 @@ func GetCommandOutput(command string) string {
 
 	// Just log the stderr if any
 	if stderr.Len() > 0 {
-		log.Printf("STDERR: " + stderr.String())
+		log.Printf("STDERR: %s", stderr.String())
 	}
 	return strings.TrimSpace(out.String())
 }

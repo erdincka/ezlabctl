@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"ezlabctl/internal"
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -14,10 +12,10 @@ var uiCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {
         log.Println("Get the ui endpoint...")
 
-        _, ezlabFiles, uaConfig := internal.GetDeployConfig()
+        // _, ezlabFiles, uaConfig := internal.GetDeployConfig()
 
-        uiHosts := internal.GetCommandOutput(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
-        log.Printf("Update DNS to point %s to %s", uaConfig.Domain, uiHosts)
+        // uiHosts := internal.GetCommandOutput(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", templateFiles.WorkloadKubeConfig))
+        // log.Printf("Update DNS to point %s to %s", uaConfig.Domain, uiHosts)
         // exitCode, err := internal.RunCommand(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
         // if err != nil {
         //     log.Printf("Error: %v\n", err)

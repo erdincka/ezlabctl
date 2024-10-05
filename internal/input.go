@@ -15,120 +15,120 @@ import (
 )
 
 // GetUAInput collects node details, credentials, and checks connectivity
-func GetUAInput() (*AppConfig, error) {
-	var orchestrator Node
-	var controller Node
-	var workers []Node
+// func GetUAInput() (*AppConfig, error) {
+// 	var orchestrator Node
+// 	var controller Node
+// 	var workers []Node
 
-    // Read config file
-    appConfig := GetAppConfiguration()
+//     // Read config file
+//     appConfig := GetAppConfiguration()
 
-	// Get orchestrator node input (default to localhost)
-    orchestratorInput := AskForInput("Enter the orchestrator node (IP or Hostname)", appConfig.Orchestrator.IP)
+// 	// Get orchestrator node input (default to localhost)
+//     orchestratorInput := AskForInput("Enter the orchestrator node (IP or Hostname)", appConfig.Orchestrator.IP)
 
-	// Get controller node input
-    controllerInput := AskForInput("Enter the controller node (IP or Hostname)", appConfig.Controller.IP)
+// 	// Get controller node input
+//     controllerInput := AskForInput("Enter the controller node (IP or Hostname)", appConfig.Controller.IP)
 
-	// Get worker nodes input and validate connectivity for each
-    workerIps := GetWorkerIPs()
-    workerInput := AskForInput("Enter worker nodes (IP or Hostname, min 3, separated by comma)", workerIps)
+// 	// Get worker nodes input and validate connectivity for each
+//     workerIps := GetWorkerIPs()
+//     workerInput := AskForInput("Enter worker nodes (IP or Hostname, min 3, separated by comma)", workerIps)
 
-    if len(strings.Split(workerInput, ",")) < 3 {
-        log.Fatalln("minimum of three workers are required")
-    }
+//     if len(strings.Split(workerInput, ",")) < 3 {
+//         log.Fatalln("minimum of three workers are required")
+//     }
 
-    // Get credentials
-    username := AskForInput("Enter SSH username", appConfig.Username)
-    password := AskForInput("Enter SSH password", appConfig.Password)
+//     // Get credentials
+//     username := AskForInput("Enter SSH username", appConfig.Username)
+//     password := AskForInput("Enter SSH password", appConfig.Password)
 
-    // Validate orchestrator, controller and worker nodes
-    orchNode, err := ResolveNode(orchestratorInput)
-    if err != nil {
-        return nil, fmt.Errorf("failed to validate orchestrator node: %w", err)
-    }
-    orchestrator = *orchNode
+//     // Validate orchestrator, controller and worker nodes
+//     orchNode, err := ResolveNode(orchestratorInput)
+//     if err != nil {
+//         return nil, fmt.Errorf("failed to validate orchestrator node: %w", err)
+//     }
+//     orchestrator = *orchNode
 
-    ctrlNode, err := ResolveNode(controllerInput)
-    if err != nil {
-        return nil, fmt.Errorf("failed to validate controller node: %w", err)
-    }
-    controller = *ctrlNode
+//     ctrlNode, err := ResolveNode(controllerInput)
+//     if err != nil {
+//         return nil, fmt.Errorf("failed to validate controller node: %w", err)
+//     }
+//     controller = *ctrlNode
 
-    for _, node := range strings.Split(workerInput, ",") {
-        workerNode, err := ResolveNode(node)
-        if err != nil {
-            return nil, fmt.Errorf("invalid worker node #%s: %w", node, err)
-        }
-        workers = append(workers, *workerNode)
-    }
+//     for _, node := range strings.Split(workerInput, ",") {
+//         workerNode, err := ResolveNode(node)
+//         if err != nil {
+//             return nil, fmt.Errorf("invalid worker node #%s: %w", node, err)
+//         }
+//         workers = append(workers, *workerNode)
+//     }
 
-    // Get domain
-    domain := AskForInput("Enter UA domain", appConfig.Domain)
+//     // Get domain
+//     domain := AskForInput("Enter UA domain", appConfig.Domain)
 
-    // Test connection to all nodes
-    for _, node := range append(workers, controller, orchestrator) {
-        go TestCredentials(node.IP, &username, &password)
-    }
+//     // Test connection to all nodes
+//     for _, node := range append(workers, controller, orchestrator) {
+//         go TestCredentials(node.IP, &username, &password)
+//     }
 
-	registryUrl := AskForInput("Enter Registry URL (without http[s])", appConfig.RegistryUrl)
-	registryUsername := AskForInput("Enter Registry Username", appConfig.RegistryUsername)
-	registryPassword := AskForInput("Enter Registry Password", appConfig.RegistryPassword)
-	registryInsecure := AskForInput("Is Registry Insecure", fmt.Sprint(appConfig.RegistryInsecure))
+// 	registryUrl := AskForInput("Enter Registry URL (without http[s])", appConfig.RegistryUrl)
+// 	registryUsername := AskForInput("Enter Registry Username", appConfig.RegistryUsername)
+// 	registryPassword := AskForInput("Enter Registry Password", appConfig.RegistryPassword)
+// 	registryInsecure := AskForInput("Is Registry Insecure", fmt.Sprint(appConfig.RegistryInsecure))
 
-    // Save the configuration if all went well
-	appConfig.Orchestrator = orchestrator
-	appConfig.Controller = controller
-	appConfig.Workers = workers
-    appConfig.Username = username
-    appConfig.Password = password
-    appConfig.Domain =   domain
-	appConfig.RegistryUrl = registryUrl
-	appConfig.RegistryUsername = registryUsername
-	appConfig.RegistryPassword = registryPassword
-	appConfig.RegistryInsecure = registryInsecure == "true"
+//     // Save the configuration if all went well
+// 	appConfig.Orchestrator = orchestrator
+// 	appConfig.Controller = controller
+// 	appConfig.Workers = workers
+//     appConfig.Username = username
+//     appConfig.Password = password
+//     appConfig.Domain =   domain
+// 	appConfig.RegistryUrl = registryUrl
+// 	appConfig.RegistryUsername = registryUsername
+// 	appConfig.RegistryPassword = registryPassword
+// 	appConfig.RegistryInsecure = registryInsecure == "true"
 
-	// Save the updated config
-	if err := saveConfig(appConfig); err != nil {
-		log.Fatal("Error saving config:", err)
-	} else {
-		log.Println("Config saved.")
-	}
+// 	// Save the updated config
+// 	if err := saveConfig(appConfig); err != nil {
+// 		log.Fatal("Error saving config:", err)
+// 	} else {
+// 		log.Println("Config saved.")
+// 	}
 
-	return appConfig, nil
-}
+// 	return appConfig, nil
+// }
 
-func GetWorkerIPs() string {
-	appConfig := GetAppConfiguration()
-	return strings.Join(func(nodes []Node) []string {
-        ips := []string{}
-        for _, node := range nodes {
-            ips = append(ips, node.IP)
-        }
-        return ips
-    }(appConfig.Workers), ",")
-}
+// func GetWorkerIPs() string {
+// 	appConfig := GetAppConfiguration()
+// 	return strings.Join(func(nodes []Node) []string {
+//         ips := []string{}
+//         for _, node := range nodes {
+//             ips = append(ips, node.IP)
+//         }
+//         return ips
+//     }(appConfig.Workers), ",")
+// }
 
 // GetDFInput collects information for External Data Fabric configuration
-func GetDFInput() (*AppConfig, error) {
-    // Read config file
-    appConfig := GetAppConfiguration()
+// func GetDFInput() (*AppConfig, error) {
+//     // Read config file
+//     appConfig := GetAppConfiguration()
 
-	host := AskForInput("DF host", appConfig.DFHost)
-	user := AskForInput("DF Cluster Admin", appConfig.DFAdmin)
-	password := AskForInput("DF Cluster Admin password", appConfig.DFPass)
+// 	host := AskForInput("DF host", appConfig.DFHost)
+// 	user := AskForInput("DF Cluster Admin", appConfig.DFAdmin)
+// 	password := AskForInput("DF Cluster Admin password", appConfig.DFPass)
 
-	appConfig.DFHost = host
-	appConfig.DFAdmin = user
-	appConfig.DFPass = password
+// 	appConfig.DFHost = host
+// 	appConfig.DFAdmin = user
+// 	appConfig.DFPass = password
 
-	// Save the node config to a file
-	if err := saveConfig(appConfig); err != nil {
-		return nil, err
-	}
+// 	// Save the node config to a file
+// 	if err := saveConfig(appConfig); err != nil {
+// 		return nil, err
+// 	}
 
-	return appConfig, nil
+// 	return appConfig, nil
 
-}
+// }
 
 func getFqdn(ip string) (string) {
     names, err := net.LookupAddr(ip)
@@ -169,23 +169,23 @@ func ResolveNode(node string) (*Node, error) {
 }
 
 // saveConfig saves the node configuration to a JSON file
-func saveConfig(config *AppConfig) error {
-	file, err := os.Create("ezlab.json")
-	if err != nil {
-		return fmt.Errorf("failed to create config file: %w", err)
-	}
-	defer file.Close()
+// func saveConfig(config *AppConfig) error {
+// 	file, err := os.Create("ezlab.json")
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create config file: %w", err)
+// 	}
+// 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
+// 	encoder := json.NewEncoder(file)
+// 	encoder.SetIndent("", "  ")
 
-	if err := encoder.Encode(config); err != nil {
-		return fmt.Errorf("failed to write config to file: %w", err)
-	}
+// 	if err := encoder.Encode(config); err != nil {
+// 		return fmt.Errorf("failed to write config to file: %w", err)
+// 	}
 
-	// fmt.Println("Node configuration saved to ezlab_config.json")
-	return nil
-}
+// 	// fmt.Println("Node configuration saved to ezlab_config.json")
+// 	return nil
+// }
 
 func GetAppConfiguration() *AppConfig {
     var config AppConfig

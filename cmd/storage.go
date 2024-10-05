@@ -27,9 +27,9 @@ func init() {
     attachStorageCmd.Flags().StringVarP(&dfhost, "dfhost", "", "", "EDF Host")
     attachStorageCmd.Flags().StringVarP(&dfuser, "dfuser", "", "mapr", "EDF Admin User")
     attachStorageCmd.Flags().StringVarP(&dfpass, "dfpass", "", "mapr", "EDF Admin Password")
-    attachStorageCmd.MarkFlagRequired("dfhost")
-    attachStorageCmd.MarkFlagRequired("dfuser")
-    attachStorageCmd.MarkFlagRequired("dfpass")
+    _ = attachStorageCmd.MarkFlagRequired("dfhost")
+    _ = attachStorageCmd.MarkFlagRequired("dfuser")
+    _ = attachStorageCmd.MarkFlagRequired("dfpass")
 }
 
 func PrepareEDF(cmd *cobra.Command) {
@@ -53,7 +53,9 @@ func PrepareEDF(cmd *cobra.Command) {
     // internal.SCPPutFile(dfhost, appConfig.Username, appConfig.Password, "./templates/s3_iam_policy.json", "/tmp/s3_iam_policy.json")
 
     log.Printf("Connect to %s...\n", dfhost)
-    internal.SshCommands(dfhost, sshuser, sshpass, commands)
+    err := internal.SshCommands(dfhost, sshuser, sshpass, commands); if err!= nil {
+        log.Fatal(err)
+    }
     log.Println("DF is configured for UA...")
 
     // Perform SCP transfer
