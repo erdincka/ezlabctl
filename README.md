@@ -25,14 +25,14 @@ sudo chmod 0600 /etc/sudoers.d/010_ezlab
 <!-- - Install the binary to `/usr/local/bin` -->
 Download and install the rpm package on the Orchestrator node
 
-`rpm -ivh https://github.com/erdincka/ua-rpm/releases/download/v0.1.2/ezlabctl-0.1.2-1.x86_64.rpm`
+`sudo rpm -ivh https://github.com/erdincka/ua-rpm/releases/download/v0.1.2/ezlabctl-0.1.2-1.x86_64.rpm`
 
 
 ### Install A Single-node Ezmeral Data Fabric if needed
 
 TODO: Update `.wgetrc` for default repository access.
 
-`sudo /usr/local/bin/ezlabctl df -c -i -u ezmeral -p Admin123. -r http://10.1.1.4/mapr/ -d /dev/sda`
+`/usr/local/bin/ezlabctl df -c -i -u ezmeral -p Admin123. -r http://10.1.1.4/mapr/ -d /dev/sda`
 
 Parameters:
 
@@ -55,7 +55,7 @@ Parameters:
 Run on the Orchestrator host
 
 Example for my home lab:
-`sudo /usr/local/bin/ezlabctl ua -c -t -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123. -a --dfhost 10.1.1.31 --dfuser mapr --dfpass mapr -d uatest.kayalab.uk -o --registryUrl 10.1.1.4:5000/ezmeral -v --confirm`
+`/usr/local/bin/ezlabctl ua -c -t -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123. -a --dfhost 10.1.1.31 --dfuser mapr --dfpass mapr -d uatest.kayalab.uk -o --registryUrl 10.1.1.4:5000/ezmeral -v --confirm`
 
 
 Parameters:

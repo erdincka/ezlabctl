@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -21,8 +20,8 @@ func PrepareCommands(hostname string) []string {
 		"sudo sed -i 's/preserve_hostname:.*/preserve_hostname: true\\nmanage_etc_hosts: false/' /etc/cloud/cloud.cfg",
 		"sudo sed -i 's/ssh_pwauth:.*/ssh_pwauth: true/' /etc/cloud/cloud.cfg",
 		"sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config",
-		// following file may or may not exist (e.g. in case of cloud-init)
-		"sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/50-cloud-init.conf || true",
+		// following file is in RHEL9 not RHEL8
+		// "sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/50-cloud-init.conf || true",
 		"sudo systemctl restart sshd",
 		// set host resolution for IPv4
 		"sudo sed -i '/^::1/d' /etc/hosts",
@@ -189,10 +188,10 @@ func streamOutput(pipe io.ReadCloser, pipeName string) {
 	}
 }
 
-func IfRoot(prompt string) {
-	if os.Geteuid() == 0 {
-		log.Println(prompt)
-	} else {
-		log.Fatalf("You must be root to run this command. Now using UID: %d", os.Geteuid())
-	}
-}
+// func IfRoot(prompt string) {
+// 	if os.Geteuid() == 0 {
+// 		log.Println(prompt)
+// 	} else {
+// 		log.Fatalf("You must be root to run this command. Now using UID: %d", os.Geteuid())
+// 	}
+// }

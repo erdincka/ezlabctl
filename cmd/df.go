@@ -39,8 +39,8 @@ var datafabricCmd = &cobra.Command{
 		var err error
 		host := internal.GetOutboundIP()
 
-		// Check root privileges
-		internal.IfRoot("Setting up host for Data Fabric installation")
+		// // Check root privileges
+		// internal.IfRoot("Setting up host for Data Fabric installation")
 
 		dfNode, err := internal.ResolveNode(host)
 		if err != nil {

@@ -91,8 +91,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 
 		host := internal.GetOutboundIP()
 
-		// Check root privileges
-		internal.IfRoot("Setting up host as Unified Analytics orchestrator")
+		// // Check root privileges
+		// internal.IfRoot("Setting up host as Unified Analytics orchestrator")
 
 		// Validate host resolution
 		orchNode, err := internal.ResolveNode(host)
