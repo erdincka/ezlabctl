@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"bytes"
+	"embed"
 	"encoding/base64"
 	"log"
 	"os"
@@ -9,48 +9,46 @@ import (
 	"text/template"
 )
 
+//go:embed templates/*
+var templatesFS embed.FS
+
 func ProcessTemplates(targetDir string, data UAConfig) {
 	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
 		log.Fatal("Error creating yaml directory: ", err)
 	}
 
-	for _, file := range GetDeploySteps() {
-		// go func(f string) {
-			ProcessTemplate("templates/" + file, targetDir + "/" + filepath.Base(file), data)
-			log.Println("Processing: " + file)
-		// }(file)
-	}
-
-	log.Println("YAML files ready")
-}
-
-func ProcessTemplate(inputFile string, outputFile string, data UAConfig) {
-
-	templateContent, err := os.ReadFile(inputFile)
-	if err != nil {
-		log.Fatalf("failed to read template file: %v", err)
-	}
-
-	tmpl, err := template.New(inputFile).Funcs(template.FuncMap{
+	// log.Println(templatesFS.ReadDir("templates"))
+	funcMap := template.FuncMap{
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
-	}).Parse(string(templateContent))
+	}
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.yaml")
 	if err != nil {
-		log.Fatalf("failed to parse: %v", err)
+		log.Fatalf("failed to parse templates: %v", err)
 	}
 
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, data)
-	if err != nil {
-		log.Fatalf("failed to execute template: %v", err)
+	// Iterate over each template in the set
+	for _, templateName := range tmpl.Templates() {
+		// Build the output file path
+		outputFilePath := filepath.Join(targetDir, filepath.Base(templateName.Name()))
+
+		// Create the output file
+		outFile, err := os.Create(outputFilePath)
+		if err != nil {
+			log.Fatalf("failed to create output file: %v", err)
+		}
+		defer outFile.Close()
+
+		// Execute the template with the provided data
+		err = tmpl.ExecuteTemplate(outFile, templateName.Name(), data)
+		if err != nil {
+			log.Fatalf("failed to execute template: %v", err)
+		}
+
+		log.Println("Processed template:", templateName.Name())
 	}
 
-	err = os.WriteFile(outputFile, buf.Bytes(), 0644)
-	if err != nil {
-		log.Fatalf("failed to write output file: %v", err)
-	}
-
-	log.Printf("Template saved to %s\n", outputFile)
+	log.Println("YAML files ready")
 }

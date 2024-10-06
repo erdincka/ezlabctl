@@ -56,7 +56,8 @@ func Preinstall(hostname string, extraCommands []string, wg *sync.WaitGroup) {
 	}
 }
 
-func PreinstallOverSsh(hostname, sshuser, sshpass string) {
+func PreinstallOverSsh(hostname, sshuser, sshpass string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	commands := PrepareCommands(hostname)
 	err := SshCommands(hostname, sshuser, sshpass, commands)
 	if err != nil {

@@ -3,3 +3,5 @@ ezlab.json
 log/
 .ezstatus
 .vscode
+build.sh
+.DS_Store

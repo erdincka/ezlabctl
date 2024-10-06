@@ -54,7 +54,8 @@ Parameters:
 
 Run on the Orchestrator host
 
-`ezlabctl ua -c -s -t -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123.`
+Example for my home lab:
+`sudo ./ezlabctl ua -c -t -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123. -a --dfhost 10.1.1.31 --dfuser mapr --dfpass mapr -d uatest.kayalab.uk -o --registryUrl 10.1.1.4:5000/mapr -v`
 
 
 Parameters:

@@ -15,7 +15,8 @@ func init() {
 	rootCmd.AddCommand(datafabricCmd)
 	datafabricCmd.Flags().BoolP("configure", "c", false, "Run pre-install configuration steps")
     datafabricCmd.Flags().BoolP("installer", "i", false, "Deploy mapr-installer")
-    datafabricCmd.Flags().StringVarP(&sshuser, "username", "u", "", "SSH User")
+	datafabricCmd.Flags().Bool("confirm", false, "Confirm deployment of Data Fabric on this host")
+	datafabricCmd.Flags().StringVarP(&sshuser, "username", "u", "", "SSH User")
     datafabricCmd.Flags().StringVarP(&sshpass,"password", "p", "", "SSH Password")
     datafabricCmd.Flags().StringVarP(&repo, "repo", "r", "https://package.ezmeral.hpe.com/releases", "MapR Repo (use your HPE Passport credentials in ~/.wgetrc if using default)")
     datafabricCmd.Flags().StringVarP(&disk, "disk", "d", "/dev/sdb", "MapR data disk")
@@ -25,6 +26,14 @@ func init() {
 var datafabricCmd = &cobra.Command{
     Use:   "df",
 	Short: "Install Data Fabric, runs pre-install configuration if -c flag is set, deploys installer if -i flag is set",
+	PreRun: func (cmd *cobra.Command, args []string)  {
+		doInstall, _ := cmd.Flags().GetBool("instaler")
+		if doInstall {
+			_ = cmd.MarkFlagRequired("sshuser")
+			_ = cmd.MarkFlagRequired("sshpass")
+		}
+	},
+
     Run: func(cmd *cobra.Command, args []string) {
 
 		var err error
@@ -52,13 +61,7 @@ var datafabricCmd = &cobra.Command{
 		}
 
 		if cmd.Flags().Changed("installer") {
-			// Need credentials and repo if installer is set
-			sshuser = internal.GetStringInput(cmd, "username", "Username", "root")
-			sshpass = internal.GetStringInput(cmd, "password", "Password", "")
-			disk = internal.GetStringInput(cmd, "disk", "Data Disk", "/dev/sdb")
-			repo = internal.GetStringInput(cmd, "repo", "MapR Repo", "https://package.ezmeral.hpe.com/releases")
 			// TODO: check if repo is accessible and ask for credentials if auth needed
-
 			log.Println("Deploying mapr-installer...")
 			Installer(df.FQDN, sshuser, sshpass, repo, disk)
 		}
@@ -77,7 +80,7 @@ var datafabricCmd = &cobra.Command{
 
 func Installer(host, username, password, repo, disk string) {
 	// using UAConfig as proxy to pass parameters to template engine
-	internal.ProcessTemplate("./templates/df-stanza.yaml", "/tmp/mapr-stanza.yaml", internal.UAConfig{ Master: host, Username: username, Password: password, Domain: disk })
+	// internal.ProcessTemplate("./templates/df-stanza.yaml", "/tmp/mapr-stanza.yaml", internal.UAConfig{ Master: host, Username: username, Password: password, Domain: disk })
 	// internal.SCPPutFile(host, username, password, "/tmp/mapr-stanza.yaml", "/tmp/mapr-stanza.yaml")
 
 	log.Printf("Using repo: %s\n", repo)

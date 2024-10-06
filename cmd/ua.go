@@ -59,7 +59,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		attach, _ := cmd.Flags().GetBool("attach")
 		if attach {
 			_ = cmd.MarkFlagRequired("dfhost")
-			_ = cmd.MarkFlagRequired("dfuser")
+			// _ = cmd.MarkFlagRequired("dfuser") # using default
 			_ = cmd.MarkFlagRequired("dfpass")
 		}
 
@@ -137,7 +137,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 				// Validate connectivity and sudo permissions
 				err = internal.TestCredentials(node.IP, &sshuser, &sshpass); if err != nil { log.Fatal(err); }
 				// Configure master
-				internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass)
+				wg.Add(1)
+				go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
 			}
 
 			// Configure workers if set
@@ -162,8 +163,9 @@ var unifiedAnalyticsCmd = &cobra.Command{
 					err = internal.TestCredentials(node.IP, &sshuser, &sshpass); if err!= nil {
 						log.Fatal(err)
 					}
-					// Configure master
-					internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass)
+					// Configure worker
+					wg.Add(1)
+					go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
 				}
 
 			}
