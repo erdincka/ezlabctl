@@ -139,6 +139,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 				// Configure master
 				wg.Add(1)
 				go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
+			} else {
+				log.Printf("No master configured, skipping master configuration.")
 			}
 
 			// Configure workers if set
@@ -168,15 +170,21 @@ var unifiedAnalyticsCmd = &cobra.Command{
 					go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
 				}
 
+			} else {
+				log.Printf("No workers configured, skipping worker configuration.")
 			}
 
 			wg.Wait()
+		} else {
+			log.Fatal("Skipping pre-install configuration.")
 		}
 
 		// Check and execute if EDF configuration requested
 		if cmd.Flags().Changed("attach") {
 			log.Println("Configuring EDF to use by UA...")
 			PrepareEDF(cmd)
+		} else {
+			log.Println("Skipping EDF attach.")
 		}
 
 		clusterName := strings.Split(domain, ".")[0]
@@ -230,6 +238,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		if cmd.Flags().Changed("template") {
 			log.Println("Configure templates...")
 			internal.ProcessTemplates(templateFiles.TemplateDirectory, uaConfig)
+		} else {
+			log.Println("Skipping templating.")
 		}
 
 		deploySteps := internal.GetDeploySteps()
@@ -247,7 +257,9 @@ var unifiedAnalyticsCmd = &cobra.Command{
                     log.Fatalln("Prechecks failed!")
                 }
             }
-        }
+        } else {
+			log.Println("Skipping precheck validation.")
+		}
 
 		if cmd.Flags().Changed("orchinit") && cmd.Flags().Changed("confirm") {
 			log.Println("Initializing orchestrator on host:", orch.FQDN)
@@ -262,6 +274,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
                     log.Fatalln("Orchestrator init failed!")
                 }
             }
+		} else {
+			log.Println("Skipping orchestrator initialization.")
 		}
 
 		// Define kubectl command against orchestrator cluster
@@ -316,6 +330,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
 			}
 
 			log.Println("EzUA deployment started.")
+		} else {
+			log.Print("Skipping deploy CRs...")
 		}
 		log.Println("Done.")
 	},
