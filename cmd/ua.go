@@ -249,7 +249,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
             }
         }
 
-		if cmd.Flags().Changed("orchinit") and cmd.Flags().Changed("confirm") {
+		if cmd.Flags().Changed("orchinit") && cmd.Flags().Changed("confirm") {
 			log.Println("Initializing orchestrator on host:", orch.FQDN)
 			orchInitCmd := "/usr/local/bin/ezfabricctl orchestrator init --input " + templateFiles.TemplateDirectory + "/" + deploySteps["fabricinit"] + " --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + templateFiles.OrchestratorKubeConfig
             log.Println(orchInitCmd)
