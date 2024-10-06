@@ -176,7 +176,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 
 			wg.Wait()
 		} else {
-			log.Fatal("Skipping pre-install configuration.")
+			log.Println("Skipping pre-install configuration.")
 		}
 
 		// Check and execute if EDF configuration requested
