@@ -56,7 +56,7 @@ var datafabricCmd = &cobra.Command{
 			extraCommands := []string {}
 			wg := sync.WaitGroup{}
 			wg.Add(1)
-			internal.Preinstall(df.FQDN, extraCommands, &wg)
+			internal.Preinstall(df.FQDN, extraCommands, &wg, false) // no dryrun option for DF
 			wg.Wait()
 		}
 

@@ -32,35 +32,44 @@ func PrepareCommands(hostname string) []string {
 		"sudo dnf install -yq glibc-langpack-en",
 		"sudo localectl set-locale LANG=en_US.UTF-8",
 		// "echo '" + user + " ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/" + user,
-		// Rocky repository workaround
-		"sudo rpm -e openssl-fips-provider --nodeps || true",
+		// Rocky 9 repository workaround, not needed for RHEL8
+		// "sudo rpm -e openssl-fips-provider --nodeps || true",
 		"sudo dnf upgrade -yq",
 	}
 
 	return commands
 }
 
-func Preinstall(hostname string, extraCommands []string, wg *sync.WaitGroup) {
+func Preinstall(hostname string, extraCommands []string, wg *sync.WaitGroup, dryrun bool) {
 	defer wg.Done()
+
 	commands := PrepareCommands(hostname)
 	for _, command := range append(commands, extraCommands...) {
-		// log.Printf("%s: %s", hostname, command)
-		exitCode, err := RunCommand(command)
-		if err != nil {
-			log.Fatal("Error running preinstall: ", err)
-		}
-		if exitCode > 0 {
-			log.Fatal("Pre-install configuration failed on ", hostname, exitCode)
+		if dryrun {
+			log.Printf("[ %s ]: Skipped: %s", hostname, command)
+		} else {
+			// log.Printf("%s: %s", hostname, command)
+			exitCode, err := RunCommand(command)
+			if err != nil {
+				log.Fatal("Error running preinstall: ", err)
+			}
+			if exitCode > 0 {
+				log.Fatal("Pre-install configuration failed on ", hostname, exitCode)
+			}
 		}
 	}
 }
 
-func PreinstallOverSsh(hostname, sshuser, sshpass string, wg *sync.WaitGroup) {
+func PreinstallOverSsh(hostname, sshuser, sshpass string, wg *sync.WaitGroup, dryrun bool) {
 	defer wg.Done()
 	commands := PrepareCommands(hostname)
-	err := SshCommands(hostname, sshuser, sshpass, commands)
-	if err != nil {
-		log.Fatal("Error running preinstall: ", err)
+	if dryrun {
+		log.Printf("[%s]: Skipped: %v", hostname, strings.Join(commands, "\n"))
+	} else {
+		err := SshCommands(hostname, sshuser, sshpass, commands)
+		if err != nil {
+			log.Fatal("Error running preinstall: ", err)
+		}
 	}
 }
 
@@ -69,7 +78,6 @@ func DfSetupForUACommands(dfuser, dfpass string, files []string) []string {
         "id ezua || sudo useradd -m -U ezua",
         "echo ezua:" + dfpass + " | sudo chpasswd",
         "[ -f /tmp/maprticket_$(id -u) ] || echo " + dfpass + " | maprlogin password -user " + dfuser,
-        "echo Setting up the UA volumes...",
         "maprcli acl edit -type cluster -user ezua:login,cv",
         "maprcli volume create -name ezua-base-volume-ezua -path /ezua -type rw -json -rootdiruser ezua -rootdirgroup ezua -createparent true || true",
         "[ -f /tmp/ezua-maprtenantticket ] || maprlogin generateticket -type tenant -user ezua -out /tmp/ezua-maprtenantticket",

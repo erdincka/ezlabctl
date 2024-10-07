@@ -17,7 +17,7 @@ var attachStorageCmd = &cobra.Command{
         dfpass = internal.GetStringInput(cmd, "dfpass", "EDF admin password", "mapr")
         // sshuser = internal.GetStringInput(cmd, "sshuser", "SSH User", "root")
         // sshpass = internal.GetStringInput(cmd, "password", "SSH Password", "")
-        PrepareEDF(cmd)
+        PrepareEDF(cmd, false)
 
     },
 }
@@ -32,12 +32,10 @@ func init() {
     _ = attachStorageCmd.MarkFlagRequired("dfpass")
 }
 
-func PrepareEDF(cmd *cobra.Command) {
-    log.Println("Configure Data Fabric for UA...")
-
-    if dfhost == "" || dfuser == "" || dfpass == "" {
-        log.Fatalf("Missing input\nHost: %s\nUser: %s\nPass: %s\n", dfhost, dfuser, dfpass)
-    }
+func PrepareEDF(cmd *cobra.Command, dryrun bool) {
+    // if dfhost == "" || dfuser == "" || dfpass == "" {
+    //     log.Fatalf("Missing input\nHost: %s\nUser: %s\nPass: %s\n", dfhost, dfuser, dfpass)
+    // }
 
     filesToTransfer := []string{
         "ezua-maprtenantticket",
@@ -52,15 +50,26 @@ func PrepareEDF(cmd *cobra.Command) {
     // TODO: add S3 IAM policy
     // internal.SCPPutFile(dfhost, appConfig.Username, appConfig.Password, "./templates/s3_iam_policy.json", "/tmp/s3_iam_policy.json")
 
-    log.Printf("Connect to %s...\n", dfhost)
-    err := internal.SshCommands(dfhost, sshuser, sshpass, commands); if err!= nil {
-        log.Fatal(err)
+    if dryrun {
+        for _, cmd := range commands {
+            log.Printf("[EDF] Skipped command: %s\n", cmd)
+        }
+        for _, file := range filesToTransfer {
+            log.Printf("[EDF] Skipped file copy from: [%s]:/tmp/%s to /tmp\n", dfhost, file)
+         }
+    } else {
+        log.Println("Configure Data Fabric for UA...")
+
+        log.Printf("Connect to: %s...\n", dfhost)
+        err := internal.SshCommands(dfhost, sshuser, sshpass, commands); if err!= nil {
+            log.Fatal(err)
+        }
+        log.Println("DF is configured for UA...")
+        // Perform SCP transfer
+        log.Println("Getting DF files to /tmp...")
+        internal.ScpGetFiles(dfhost, dfuser, dfpass, "/tmp", "/tmp", filesToTransfer)
+
+        log.Println("DF Setup is complete. Ensure DF is licensed to use NFS service")
     }
-    log.Println("DF is configured for UA...")
 
-    // Perform SCP transfer
-    log.Println("Getting DF files to /tmp...")
-    internal.ScpGetFiles(dfhost, dfuser, dfpass, "/tmp", "/tmp", filesToTransfer)
-
-    log.Println("DF Setup is complete. Ensure DF is licensed to use NFS service")
 }

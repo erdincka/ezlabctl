@@ -11,7 +11,7 @@
 
 Enable password authtentication on all hosts
 ```bash
-sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config; sudo systemctl restart sshd
+sudo sed -i 's/^[^#]*PasswordAuthentication[[:space:]]no/PasswordAuthentication yes/' /etc/ssh/sshd_config && sudo systemctl restart sshd
 ```
 
 Enable passwordless sudo for all hosts (replace username for your admin user)
@@ -55,7 +55,7 @@ Parameters:
 Run on the Orchestrator host
 
 Example for my home lab:
-`/usr/local/bin/ezlabctl ua -c -t -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123. -a --dfhost 10.1.1.31 --dfuser mapr --dfpass mapr -d uatest.kayalab.uk -o --registryUrl 10.1.1.4:5000/ezmeral -v --confirm`
+`/usr/local/bin/ezlabctl ua -c -t -v -o -m 10.1.1.33 -w 10.1.1.34,10.1.1.35,10.1.1.36 -u ezmeral -p Admin123. -a --dfhost 10.1.1.31 --dfuser mapr --dfpass mapr -d uatest.kayalab.uk -o --registryUrl 10.1.1.4:5000/ezmeral --confirm`
 
 
 Parameters:
@@ -83,6 +83,8 @@ Parameters:
   - `--master` and `--worker` are required
 
 `--orchinit` | `-o`: Initialize orchestrator cluster on this node
+
+  - will not execute without `--confirm`
 
   - TODO: required params
 
@@ -114,6 +116,7 @@ Parameters:
 
 `--registryInsecure`: Set registry to insecure for http access (default: true)
 
+TODO: add Proxy parameter
 
 ## Monitor
 

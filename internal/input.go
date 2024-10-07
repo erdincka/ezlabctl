@@ -257,6 +257,7 @@ func ReadFile(path string) []byte {
 	// Open the file and defer closing it
 	file, err := os.Open(path)
 	if err != nil {
+		log.Printf("We need the file to be available to continue: %s\n", path)
 		log.Fatalln(err)
 	}
 	defer file.Close()
@@ -264,6 +265,7 @@ func ReadFile(path string) []byte {
 	// Read the contents of the file into a string
 	data, err := io.ReadAll(file)
 	if err != nil {
+		log.Printf("We need the file to be readable to continue: %s\n", path)
 		log.Fatalln(err)
 	}
 

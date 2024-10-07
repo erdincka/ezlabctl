@@ -1,39 +1,39 @@
 package cmd
 
 import (
+	"ezlabctl/internal"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var uiCmd = &cobra.Command{
-    Use:   "ui",
-    Short: "Show/Open UI link for the deployment",
+    Use:   "ui <workload-kubeconfig> <clustername>",
+    Short: "UI access for the deployment",
+    Args: cobra.MinimumNArgs(2),
     Run: func(cmd *cobra.Command, args []string) {
-        log.Println("Get the ui endpoint...")
+        kubeconf = args[0]
+        clusterName = args[1]
 
-        // _, ezlabFiles, uaConfig := internal.GetDeployConfig()
+        command :=  fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", kubeconf)
+        log.Printf("Get UI endpoints with: %s\n", command)
 
-        // uiHosts := internal.GetCommandOutput(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", templateFiles.WorkloadKubeConfig))
-        // log.Printf("Update DNS to point %s to %s", uaConfig.Domain, uiHosts)
-        // exitCode, err := internal.RunCommand(fmt.Sprintf("kubectl --kubeconfig=%s get pod -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[*].spec.nodeName}'", ezlabFiles.WorkloadKubeConfig))
-        // if err != nil {
-        //     log.Printf("Error: %v\n", err)
-        // } else {
-        //     if exitCode!= 0 {
-        //         log.Printf("Error: %v\n", err)
-        //     }
-        //     log.Println("Done")
-        // }
-        // kubectl -n istio-system get pod -l app=istio-ingressgateway -o jsonpath='{.items[*].status.hostIP}'
-        // OR
-        // nodePort=$(kubectl get service -n ezfabric-ui ezfabric-ui -o jsonpath='{.spec.ports[0].nodePort}')
-        // echo http://$(hostname -i):${nodePort}
+        out := internal.GetCommandOutput(command)
 
+        endpoints := strings.Split(out, " ")
+        // log.Println(endpoints)
+
+        domain := strings.Join(strings.Split(endpoints[0], ".")[1:], ".")
+        log.Println(domain)
+
+        log.Printf("Update DNS to point %s.%s to %s", clusterName, domain, out)
+
+        log.Printf("Open GUI after DNS configuration: https://home.%s.%s", clusterName, domain)
 	},
 }
 
 func init() {
     unifiedAnalyticsCmd.AddCommand(uiCmd)
-
 }

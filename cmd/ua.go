@@ -89,6 +89,8 @@ var unifiedAnalyticsCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {
 		var err error
 
+		isDryRun := ! cmd.Flags().Changed("confirm")
+
 		host := internal.GetOutboundIP()
 
 		// // Check root privileges
@@ -101,22 +103,22 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		}
 		orch := *orchNode
 
+		// Commands required only for UA
+		extraCommands := []string {
+			// TODO: update for RHEL 9
+			"( dnf repolist | grep -q HighAvailability ) || sudo subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms",
+			"sudo systemctl add-wants default.target rpc-statd.service",
+		}
+
 		// Check and execute if configuration requested
 		if cmd.Flags().Changed("configure") {
 			log.Println("Preinstall setup...")
-
-			// Commands required only for UA
-			extraCommands := []string {
-				// TODO: update for RHEL 9
-				"( dnf repolist | grep -q HighAvailability ) || sudo subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms",
-				"sudo systemctl add-wants default.target rpc-statd.service",
-			}
 
 			var wg sync.WaitGroup
 			// Prep orch host locally
 			log.Println("Configuring host:", orch.FQDN)
 			wg.Add(1)
-			go internal.Preinstall(orch.FQDN, extraCommands, &wg)
+			go internal.Preinstall(orch.FQDN, extraCommands, &wg, isDryRun)
 
 			// Configure master if set
 			if cmd.Flags().Changed("master") {
@@ -138,9 +140,9 @@ var unifiedAnalyticsCmd = &cobra.Command{
 				err = internal.TestCredentials(node.IP, &sshuser, &sshpass); if err != nil { log.Fatal(err); }
 				// Configure master
 				wg.Add(1)
-				go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
+				go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg, isDryRun)
 			} else {
-				log.Printf("No master configured, skipping master configuration.")
+				log.Printf("No master option, skipping master configuration.")
 			}
 
 			// Configure workers if set
@@ -167,11 +169,11 @@ var unifiedAnalyticsCmd = &cobra.Command{
 					}
 					// Configure worker
 					wg.Add(1)
-					go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg)
+					go internal.PreinstallOverSsh(node.FQDN, sshuser, sshpass, &wg, isDryRun)
 				}
 
 			} else {
-				log.Printf("No workers configured, skipping worker configuration.")
+				log.Printf("No worker option, skipping worker configuration.")
 			}
 
 			wg.Wait()
@@ -182,9 +184,10 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		// Check and execute if EDF configuration requested
 		if cmd.Flags().Changed("attach") {
 			log.Println("Configuring EDF to use by UA...")
-			PrepareEDF(cmd)
+			PrepareEDF(cmd, isDryRun)
 		} else {
 			log.Println("Skipping EDF attach.")
+			// PrepareEDF(cmd, true)
 		}
 
 		clusterName := strings.Split(domain, ".")[0]
@@ -243,10 +246,17 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		}
 
 		deploySteps := internal.GetDeploySteps()
+		// Define commands
+		precheckCmd := "/usr/local/bin/ezfabricctl prechecks --input " + templateFiles.TemplateDirectory + "/" + deploySteps["prechecks"] + " --parallel=true --cleanup=true"
+		orchInitCmd := "/usr/local/bin/ezfabricctl orchestrator init --input " + templateFiles.TemplateDirectory + "/" + deploySteps["fabricinit"] + " --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + templateFiles.OrchestratorKubeConfig
+		kubeOrch := "kubectl --kubeconfig=" + templateFiles.OrchestratorKubeConfig + " " // add trailing space for remainder of command
+		createNamespaceCmd:= fmt.Sprintf("%sget namespace %s || %screate namespace %s", kubeOrch, clusterName, kubeOrch, clusterName)
+		applyWorkloadPrepareCmd := kubeOrch + "apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["workloadprepare"]
+		workloadDeployCmd := kubeOrch + "apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["workloaddeploy"]
+		workloadCreateCmd := kubeOrch + "apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["fabriccluster"]
 
 		if cmd.Flags().Changed("validate") {
             log.Println("Running prechecks...")
-            precheckCmd := "/usr/local/bin/ezfabricctl prechecks --input " + templateFiles.TemplateDirectory + "/" + deploySteps["prechecks"] + " --parallel=true --cleanup=true"
             log.Println(precheckCmd)
             exitCode, err := internal.RunCommand(precheckCmd)
             if err != nil {
@@ -259,11 +269,11 @@ var unifiedAnalyticsCmd = &cobra.Command{
             }
         } else {
 			log.Println("Skipping precheck validation.")
+			log.Print("Skipped precheck command: ", precheckCmd)
 		}
 
-		if cmd.Flags().Changed("orchinit") && cmd.Flags().Changed("confirm") {
+		if cmd.Flags().Changed("orchinit") && ! isDryRun {
 			log.Println("Initializing orchestrator on host:", orch.FQDN)
-			orchInitCmd := "/usr/local/bin/ezfabricctl orchestrator init --input " + templateFiles.TemplateDirectory + "/" + deploySteps["fabricinit"] + " --releasepkg /usr/local/share/applications/ezfab-release.tgz --save-kubeconfig " + templateFiles.OrchestratorKubeConfig
             log.Println(orchInitCmd)
             exitCode, err := internal.RunCommand(orchInitCmd)
             if err != nil {
@@ -276,15 +286,13 @@ var unifiedAnalyticsCmd = &cobra.Command{
             }
 		} else {
 			log.Println("Skipping orchestrator initialization.")
+			log.Print("Skipped orchestrator init command: ", orchInitCmd)
 		}
-
-		// Define kubectl command against orchestrator cluster
-		kubeOrch := "kubectl --kubeconfig=" + templateFiles.OrchestratorKubeConfig
 
 		// confirm if kubeconf file for orchestrator is available
 		_, err = os.Stat(templateFiles.OrchestratorKubeConfig)
 		if os.IsNotExist(err) {
-			log.Fatalf("Orchestrator kubeconfig %s does not exist.\n", templateFiles.OrchestratorKubeConfig)
+			log.Fatalf("Orchestrator kubeconfig %s is needed to continue!\n", templateFiles.OrchestratorKubeConfig)
 		} else if err != nil {
 			log.Fatalf("An error occurred while checking the orchestrator kubeconfig file: %v\n", err)
 		}
@@ -293,21 +301,31 @@ var unifiedAnalyticsCmd = &cobra.Command{
 		// fmt.Printf("%+v\n", uaConfig)
 
 		if cmd.Flags().Changed("confirm") {
-			log.Print("Apply secrets...")
-			applyWorkloadPrepareCmd := kubeOrch + " apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["workloadprepare"]
-			log.Printf("$ %s", applyWorkloadPrepareCmd)
-			exitCode, err := internal.RunCommand(applyWorkloadPrepareCmd)
+
+			log.Print("Create namespace...")
+			log.Printf("Running: %s", createNamespaceCmd)
+			exitCode, err := internal.RunCommand(createNamespaceCmd)
 			if err != nil {
 				log.Fatalf("Error: %v\n", err)
-				} else {
-					if exitCode !=  0 {
-						log.Fatal("Secrets creation failed!")
-					}
+			} else {
+				if exitCode !=  0 {
+					log.Fatal("Namespace creation failed!")
 				}
+			}
+
+			log.Print("Apply secrets...")
+			log.Printf("Running: %s", applyWorkloadPrepareCmd)
+			exitCode, err = internal.RunCommand(applyWorkloadPrepareCmd)
+			if err != nil {
+				log.Fatalf("Error: %v\n", err)
+			} else {
+				if exitCode !=  0 {
+					log.Fatal("Secrets creation failed!")
+				}
+			}
 
 			log.Print("Apply workload deploy CR...")
-			workloadDeployCmd := kubeOrch + " apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["workloaddeploy"]
-			log.Printf("$ %s",workloadDeployCmd)
+			log.Printf("Running: %s",workloadDeployCmd)
 			exitCode, err = internal.RunCommand(workloadDeployCmd)
 			if err != nil {
 				log.Fatalf("Error: %v\n", err)
@@ -318,8 +336,7 @@ var unifiedAnalyticsCmd = &cobra.Command{
 			}
 
 			log.Print("Create fabric cluster...")
-			workloadCreateCmd := kubeOrch + " apply -f " + templateFiles.TemplateDirectory + "/" + deploySteps["fabriccluster"]
-			log.Printf("$ %s", workloadCreateCmd)
+			log.Printf("Running: %s", workloadCreateCmd)
 			exitCode, err = internal.RunCommand(workloadCreateCmd)
 			if err != nil {
 				log.Fatalf("Error: %v\n", err)
@@ -332,6 +349,10 @@ var unifiedAnalyticsCmd = &cobra.Command{
 			log.Println("EzUA deployment started.")
 		} else {
 			log.Print("Skipping deploy CRs...")
+			log.Printf("Skipped: %s\n", createNamespaceCmd)
+			log.Printf("Skipped: %s\n", applyWorkloadPrepareCmd)
+			log.Printf("Skipped: %s\n", workloadDeployCmd)
+			log.Printf("Skipped: %s\n", workloadCreateCmd)
 		}
 		log.Println("Done.")
 	},

@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetFlags(log.Ltime | log.Lshortfile)
 	cmd.Execute()
 }
