@@ -46,7 +46,7 @@ func Preinstall(hostname string, extraCommands []string, wg *sync.WaitGroup, dry
 	commands := PrepareCommands(hostname)
 	for _, command := range append(commands, extraCommands...) {
 		if dryrun {
-			log.Printf("[ %s ]: Skipped: %s", hostname, command)
+			log.Printf("[%s]: Skipped: %s", hostname, command)
 		} else {
 			// log.Printf("%s: %s", hostname, command)
 			exitCode, err := RunCommand(command)
@@ -64,7 +64,7 @@ func PreinstallOverSsh(hostname, sshuser, sshpass string, wg *sync.WaitGroup, dr
 	defer wg.Done()
 	commands := PrepareCommands(hostname)
 	if dryrun {
-		log.Printf("[%s]: Skipped: %v", hostname, strings.Join(commands, "\n"))
+		log.Printf("[%s]: Skipped:\n %v", hostname, strings.Join(commands, "\n"))
 	} else {
 		err := SshCommands(hostname, sshuser, sshpass, commands)
 		if err != nil {

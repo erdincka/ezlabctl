@@ -18,13 +18,19 @@ func ProcessTemplates(targetDir string, data UAConfig) {
 		log.Fatal("Error creating yaml directory: ", err)
 	}
 
+	ProcessTemplate(targetDir, "templates/0*.yaml", data) // select only UA config files
+
+	log.Println("YAML files ready")
+}
+
+func ProcessTemplate(targetDir, filePattern string, data UAConfig) {
 	// log.Println(templatesFS.ReadDir("templates"))
 	funcMap := template.FuncMap{
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
 	}
-	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.yaml")
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, filePattern)
 	if err != nil {
 		log.Fatalf("failed to parse templates: %v", err)
 	}
@@ -49,6 +55,4 @@ func ProcessTemplates(targetDir string, data UAConfig) {
 
 		log.Println("Processed template:", templateName.Name())
 	}
-
-	log.Println("YAML files ready")
 }

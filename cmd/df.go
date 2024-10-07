@@ -39,9 +39,6 @@ var datafabricCmd = &cobra.Command{
 		var err error
 		host := internal.GetOutboundIP()
 
-		// // Check root privileges
-		// internal.IfRoot("Setting up host for Data Fabric installation")
-
 		dfNode, err := internal.ResolveNode(host)
 		if err != nil {
 			log.Fatal(fmt.Errorf("failed to validate host: %w", err))
@@ -80,8 +77,7 @@ var datafabricCmd = &cobra.Command{
 
 func Installer(host, username, password, repo, disk string) {
 	// using UAConfig as proxy to pass parameters to template engine
-	// internal.ProcessTemplate("./templates/df-stanza.yaml", "/tmp/mapr-stanza.yaml", internal.UAConfig{ Master: host, Username: username, Password: password, Domain: disk })
-	// internal.SCPPutFile(host, username, password, "/tmp/mapr-stanza.yaml", "/tmp/mapr-stanza.yaml")
+	internal.ProcessTemplate("/tmp", "templates/mapr-stanza.yaml", internal.UAConfig{ Master: host, Username: username, Password: password, Domain: disk })
 
 	log.Printf("Using repo: %s\n", repo)
 	commands := internal.DfInstallerCommands(username, repo)
@@ -89,7 +85,6 @@ func Installer(host, username, password, repo, disk string) {
 	// Run the commands
 	for _, command := range commands {
 		// log.Printf("%s: %s", host, command)
-		// err := internal.SSHCommand(host, username, password, command) // Launch the SSH command
 		exitCode, err := internal.RunCommand(command) // Run the command
 		if err != nil {
 			log.Fatal("Error running installer:", err)
